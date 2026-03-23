@@ -1,0 +1,18 @@
+# .gitignore
+# Entorno virtual — nunca al repositorio
+venv/
+# Archivos compilados de Python — se regeneran automáticamente
+__pycache__/
+*.pyc
+*.pyo
+# Variables de entorno — contienen credenciales secretas
+.env
+.env.local
+# Base de datos SQLite — datos locales de desarrollo
+*.db
+*.sqlite
+# Carpetas de instancia de Flask
+instance/
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
