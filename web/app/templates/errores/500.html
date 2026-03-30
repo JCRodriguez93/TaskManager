@@ -1,0 +1,14 @@
+<!-- web/app/templates/errores/500.html -->
+{% extends 'base.html' %}
+{% block title %}Error interno — TaskManager{% endblock %}
+{% block content %}
+<div class='error-page'>
+  <div class='error-codigo'>500</div>
+  <h1>Error interno del servidor</h1>
+  <p>Ha ocurrido un error inesperado. Inténtalo de nuevo más tarde.</p>
+  <div class='error-acciones'>
+    <a href="{{ url_for('main.index') }}" class='btn'>Ir al inicio</a>
+    <a href="{{ url_for('projects.lista') }}" class='btn btn-sec'>Ver proyectos</a>
+  </div>
+</div>
+{% endblock %}

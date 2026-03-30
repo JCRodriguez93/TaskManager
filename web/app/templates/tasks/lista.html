@@ -1,22 +1,44 @@
 {% extends 'base.html' %}
-
 {% block title %}Mis tareas — TaskManager{% endblock %}
 
 {% block content %}
-<h1>Mis tareas</h1>
-
-<div class="tareas-lista">
-  {% for t in tareas %}
-  <div class="tarea prioridad-{{ t.prioridad }}">
-    <div class="tarea-info">
-      <strong>{{ t.titulo }}</strong>
-      <span class="badge badge-{{ t.prioridad }}">{{ t.prioridad }}</span>
-    </div>
-
-    <div class="tarea-proyecto">
-      <small>{{ t.proyecto }}</small>
-    </div>
-  </div>
-  {% endfor %}
+<div class="page-header">
+  <h1>Mis tareas</h1>
 </div>
+
+{% if tareas %}
+  <div class="proyectos-grid">
+    {% for t in tareas %}
+      <div class="tarjeta">
+
+        <div class="tarjeta-header">
+          <h3>{{ t.titulo }}</h3>
+
+          <span class="badge badge-{{ t.prioridad }}">
+            {{ t.prioridad | capitalize }}
+          </span>
+        </div>
+
+        <p class="descripcion" style="margin-bottom:.8rem;">
+          Proyecto: {{ t.proyecto }}
+        </p>
+
+        <span class="badge badge-{{ t.estado }}">
+          {{ t.estado | capitalize }}
+        </span>
+
+        <div class="tarjeta-footer">
+          <span></span>
+          <a class="btn btn-sec" href="{{ url_for('projects.detalle', pid=t.proyecto_id) }}">
+            Ver proyecto →
+          </a>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <p class="vacio">No tienes tareas asignadas.</p>
+{% endif %}
 {% endblock %}

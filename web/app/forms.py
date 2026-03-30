@@ -4,7 +4,8 @@ from wtforms import (
     StringField, TextAreaField, SelectField,
     DateField, PasswordField, BooleanField, SubmitField
 )
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, ValidationError
+from datetime import date
 
 
 class ProyectoForm(FlaskForm):
@@ -32,9 +33,29 @@ class ProyectoForm(FlaskForm):
     )
     submit = SubmitField('Guardar proyecto')
 
+    def validate_fecha_limite(self, campo):
+        if campo.data and campo.data < date.today():
+            raise ValidationError("La fecha límite no puede ser en el pasado.")
+
+    def validate_titulo(self, campo):
+        titulo = campo.data.strip().lower()
+
+        if not titulo:
+            raise ValidationError("El título no puede estar vacío o ser solo espacios.")
+
+        genericos = {"proyecto", "nuevo", "test", "prueba"}
+
+        if titulo in genericos:
+            raise ValidationError(f'"{campo.data}" es demasiado genérico. Elige un título más descriptivo.')
+
 
 class TareaForm(FlaskForm):
     """Formulario para crear y editar tareas."""
+
+    def __init__(self, proyecto=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.proyecto = proyecto
+
     titulo = StringField(
         'Título de la tarea',
         validators=[DataRequired(), Length(min=3, max=200)]
@@ -69,6 +90,15 @@ class TareaForm(FlaskForm):
         format='%Y-%m-%d'
     )
     submit = SubmitField('Guardar tarea')
+
+
+    def validate_titulo(self, campo):
+        titulo = campo.data.strip().lower()
+
+        if self.proyecto:
+            for tarea in self.proyecto["tareas"]:
+                if tarea["titulo"].strip().lower() == titulo:
+                    raise ValidationError("Ya existe una tarea con ese título en este proyecto.")
 
 
 class BusquedaForm(FlaskForm):
