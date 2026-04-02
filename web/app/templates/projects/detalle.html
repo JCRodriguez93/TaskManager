@@ -8,19 +8,27 @@
     <a href="{{ url_for('projects.lista') }}" class="breadcrumb">← Proyectos</a>
     <h1>{{ proyecto.titulo }}</h1>
   </div>
-  <div class="acciones">
+
+  <div class="acciones" style="display:flex; gap:0.5rem;">
     <a href="{{ url_for('projects.editar', pid=proyecto.id) }}" class="btn btn-sec">Editar</a>
+
+    <!-- No se pedirá, pero si se necesita aquí está, lo mismo solo se necesitaba flask shell-->
+    <form action="{{ url_for('projects.eliminar', pid=proyecto.id) }}"
+          method="POST" style="display:inline;">
+      <button class="btn btn-danger"
+              onclick="return confirm('¿Eliminar este proyecto?')">
+        Eliminar
+      </button>
+    </form>
   </div>
 </div>
+
 
 <p class="descripcion-proyecto">{{ proyecto.descripcion }}</p>
 
 {# Calcular progreso #}
-{% set completadas = proyecto.tareas | selectattr('estado', 'equalto', 'completada') | list %}
-<!-- este también o se cambia o no funciona-->
-{% set total = proyecto.tareas.count() %}
-{% if total > 0 %}
-  {% set progreso = (completadas | length / total * 100) | round | int %}
+{% set progreso = proyecto.progreso %}
+{% if progreso > 0 %}
   <div class="progreso-container">
     <div class="progreso-label">Progreso: {{ progreso }}%</div>
     <div class="progreso-barra">
@@ -28,6 +36,7 @@
     </div>
   </div>
 {% endif %}
+
 
 <div class="tareas-header" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem;">
   <h2>Tareas ({{ total }})</h2>
