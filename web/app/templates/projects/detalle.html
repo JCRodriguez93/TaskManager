@@ -17,7 +17,8 @@
 
 {# Calcular progreso #}
 {% set completadas = proyecto.tareas | selectattr('estado', 'equalto', 'completada') | list %}
-{% set total = proyecto.tareas | length %}
+<!-- este también o se cambia o no funciona-->
+{% set total = proyecto.tareas.count() %}
 {% if total > 0 %}
   {% set progreso = (completadas | length / total * 100) | round | int %}
   <div class="progreso-container">

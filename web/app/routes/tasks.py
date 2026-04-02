@@ -1,7 +1,7 @@
 # web/app/routes/tasks.py
 from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
 from app.forms import TareaForm
-from app.routes.projects import PROYECTOS
+#from app.routes.projects import PROYECTOS (supongo que esto se va al carajo)
 
 tasks = Blueprint('tasks', __name__)
 
