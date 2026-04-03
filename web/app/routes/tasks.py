@@ -3,14 +3,16 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from app import db
 from app.models import Proyecto, Tarea
 from app.forms import TareaForm
+from flask_login import login_required, current_user
 
 tasks = Blueprint('tasks', __name__)
 
-
 @tasks.route('/proyectos/<int:pid>/tareas/nueva', methods=['GET', 'POST'])
+@login_required
 def nueva(pid):
     proyecto = Proyecto.query.get_or_404(pid)
-
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
     form = TareaForm()
 
     if form.validate_on_submit():
@@ -36,10 +38,12 @@ def nueva(pid):
         titulo_pagina=f'Nueva tarea en {proyecto.titulo}'
     )
 
-
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/editar', methods=['GET', 'POST'])
+@login_required
 def editar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
     tarea = Tarea.query.get_or_404(tid)
 
     if tarea.proyecto_id != pid:
@@ -61,10 +65,12 @@ def editar(pid, tid):
         titulo_pagina='Editar tarea'
     )
 
-
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/eliminar', methods=['POST'])
+@login_required
 def eliminar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
     tarea = Tarea.query.get_or_404(tid)
 
     if tarea.proyecto_id != pid:
@@ -76,14 +82,17 @@ def eliminar(pid, tid):
     flash('Tarea eliminada.', 'success')
     return redirect(url_for('projects.detalle', pid=pid))
 
-
+@login_required
 @tasks.route('/mis-tareas')
 def mis_tareas():
-    # Recopilar todas las tareas de todos los proyectos
-    todas = Tarea.query.all()
+    # Si admin, ve todas las tareas; si no, solo de sus proyectos
+    if current_user.es_admin:
+        tareas = Tarea.query.all()
+    else:
+        tareas = Tarea.query.join(Proyecto).filter(Proyecto.propietario_id == current_user.id).all()
 
     # Ordenar por prioridad
     orden = {'urgente': 0, 'alta': 1, 'media': 2, 'baja': 3}
-    todas = sorted(todas, key=lambda t: orden.get(t.prioridad, 99))
+    tareas = sorted(tareas, key=lambda t: orden.get(t.prioridad, 99))
 
-    return render_template('tasks/lista.html', tareas=todas)
+    return render_template('tasks/lista.html', tareas=tareas)

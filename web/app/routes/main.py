@@ -1,21 +1,40 @@
 # web/app/routes/main.py
 from flask import Blueprint, render_template
+from flask_login import login_required, current_user
+from app.models import Proyecto, Tarea
 
 main = Blueprint('main', __name__)
 
-
 @main.route('/')
+@login_required
 def index():
-    tareas_urgentes = [
-        {'titulo': 'Revisar pull request #47', 'proyecto': 'Rediseño web', 'prioridad': 'urgente'},
-        {'titulo': 'Preparar despliegue v2.1', 'proyecto': 'App móvil', 'prioridad': 'alta'},
-        {'titulo': 'Corregir bug en el login', 'proyecto': 'Backend API', 'prioridad': 'urgente'},
-    ]
-    proyectos_activos = [
-        {'titulo': 'Rediseño web', 'tareas_total': 8, 'completadas': 3},
-        {'titulo': 'App móvil', 'tareas_total': 12, 'completadas': 9},
-        {'titulo': 'Backend API', 'tareas_total': 5, 'completadas': 1},
-    ]
+    # Filtrar proyectos según usuario o admin
+    if current_user.es_admin:
+        proyectos = Proyecto.query.all()
+    else:
+        proyectos = Proyecto.query.filter_by(propietario_id=current_user.id).all()
+
+    proyectos_activos = []
+    tareas_urgentes = []
+
+    for p in proyectos:
+        total = p.tareas.count()
+        completadas = p.tareas.filter_by(estado='completada').count()
+        pendientes = total - completadas
+        proyectos_activos.append({
+            'titulo': p.titulo,
+            'tareas_total': total,
+            'completadas': completadas
+        })
+        # Tareas urgentes
+        urgentes = p.tareas.filter(Tarea.prioridad.in_(['urgente', 'alta'])).all()
+        for t in urgentes:
+            tareas_urgentes.append({
+                'titulo': t.titulo,
+                'proyecto': p.titulo,
+                'prioridad': t.prioridad
+            })
+
     total_pendientes = sum(p['tareas_total'] - p['completadas'] for p in proyectos_activos)
 
     return render_template(
