@@ -1,7 +1,8 @@
 # web/app/models.py
-from app import db
-from datetime import datetime
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import db, login_manager
+from datetime import datetime
 
 # ── Tabla de unión para la relación muchos-a-muchos Tarea ↔ Etiqueta ──
 # No es un modelo completo, sino una tabla auxiliar sin clase propia.
@@ -11,8 +12,15 @@ tarea_etiqueta = db.Table(
     db.Column('etiqueta_id', db.Integer, db.ForeignKey('etiquetas.id'), primary_key=True)
 )
 
+# Flask-Login necesita esta función para cargar el usuario desde la sesión.
+# Se ejecuta en CADA petición donde haya una sesión activa.
+# Recibe el ID del usuario (como string) y devuelve el objeto Usuario.
+@login_manager.user_loader
+def cargar_usuario(user_id):
+    return Usuario.query.get(int(user_id))
 
-class Usuario(db.Model):
+
+class Usuario(UserMixin, db.Model):  # UserMixin PRIMERO, db.Model SEGUNDO
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
@@ -22,7 +30,7 @@ class Usuario(db.Model):
     activo = db.Column(db.Boolean, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relaciones: un usuario puede tener muchos proyectos y tareas asignadas
+    # Relaciones
     proyectos = db.relationship(
         'Proyecto',
         backref='propietario',
@@ -36,15 +44,25 @@ class Usuario(db.Model):
         foreign_keys='Tarea.asignado_id'
     )
 
+    # ── Métodos de seguridad ──────────────────────────────────────────
     def set_password(self, password):
+        """Hashea la contraseña y la almacena. Nunca almacena texto plano."""
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
+        """Verifica si la contraseña introducida coincide con el hash."""
         return check_password_hash(self.password, password)
 
+    # ── Propiedades de rol ────────────────────────────────────────────
     @property
     def es_admin(self):
         return self.rol == 'admin'
+
+    # ── Sobrescribir is_active de UserMixin para respetar el campo 'activo' ──
+    @property
+    def is_active(self):
+        """Un usuario desactivado no puede iniciar sesión aunque tenga cuenta."""
+        return self.activo
 
     def __repr__(self):
         return f'<Usuario {self.email}>'

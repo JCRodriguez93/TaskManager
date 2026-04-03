@@ -114,34 +114,36 @@ class BusquedaForm(FlaskForm):
     submit = SubmitField('Buscar')
 
 
-class LoginForm(FlaskForm):
-    """Formulario de inicio de sesión (lo usaremos en U05)."""
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Contraseña', validators=[DataRequired()])
-    recordarme = BooleanField('Recordarme')
-    submit = SubmitField('Iniciar sesión')
-
-
 class RegistroForm(FlaskForm):
-    """Formulario de registro de nuevos usuarios (lo usaremos en U05)."""
     nombre = StringField(
-        'Nombre',
-        validators=[DataRequired(), Length(min=2, max=80)]
-    )
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField(
-        'Contraseña',
+        "Nombre completo",
         validators=[
             DataRequired(),
-            Length(min=8,
-                   message='La contraseña debe tener al menos 8 caracteres.')
-        ]
+            Length(
+                min=2, max=80, message="El nombre debe tener entre 2 y 80 caracteres"
+            ),
+        ],
+    )
+    email = StringField(
+        "Correo electrónico",
+        validators=[DataRequired(), Email(message="Email no válido.")],
+    )
+    password = PasswordField(
+        "Contraseña",
+        validators=[DataRequired(), Length(min=8, message="Mínimo 8 caracteres.")],
     )
     confirmar = PasswordField(
-        'Confirmar contraseña',
+        "Confirmar contraseña",
         validators=[
-            EqualTo('password',
-                    message='Las contraseñas no coinciden.')
-        ]
+            DataRequired(),
+            EqualTo("password", message="Las contraseñas no coinciden."),
+        ],
     )
-    submit = SubmitField('Crear cuenta')
+    submit = SubmitField("Crear cuenta")
+
+
+class LoginForm(FlaskForm):
+    email = StringField("Correo electrónico", validators=[DataRequired(), Email()])
+    password = PasswordField("Contraseña", validators=[DataRequired()])
+    recordarme = BooleanField("Recordarme en este dispositivo")
+    submit = SubmitField("Iniciar sesión")
