@@ -1,0 +1,57 @@
+<!-- web/app/templates/admin/panel.html -->
+
+{% extends 'base.html' %} {% block title %}Panel de administrador —
+TaskManager{% endblock %} {% block content %}
+<section class="dashboard">
+  <h1>Panel de administrador</h1>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="numero">{{ total_proyectos }}</span>
+      <span class="etiqueta">Proyectos</span>
+    </div>
+    <div class="stat">
+      <span class="numero">{{ total_tareas }}</span>
+      <span class="etiqueta">Tareas</span>
+    </div>
+    <div class="stat">
+      <span class="numero">{{ usuarios_activos }}</span>
+      <span class="etiqueta">Usuarios activos</span>
+    </div>
+  </div>
+
+  <h2>Todos los proyectos</h2>
+  {% for proyecto in proyectos %}
+  <div class="tarjeta">
+    <strong>{{ proyecto.titulo }}</strong>
+    <span class="proyecto">Propietario: {{ proyecto.propietario.nombre }}</span>
+  </div>
+  {% else %}
+  <p class="vacio">No hay proyectos.</p>
+  {% endfor %}
+
+  <h2>Usuarios</h2>
+  {% for usuario in usuarios %}
+  <div class="tarjeta">
+    <strong>{{ usuario.nombre }}</strong>
+    <span class="proyecto">Rol: {{ usuario.rol }}</span>
+    <span class="proyecto"
+      >Alta: {{ usuario.creado_en.strftime('%d/%m/%Y') }}</span
+    >
+
+    <form
+      action="{{ url_for('main.toggle_usuario', id=usuario.id) }}"
+      method="POST"
+    >
+      <button
+        class="btn {% if usuario.activo %}btn-danger{% else %}btn-sec{% endif %}"
+      >
+        {{ 'Desactivar' if usuario.activo else 'Activar' }}
+      </button>
+    </form>
+  </div>
+  {% else %}
+  <p class="vacio">No hay usuarios.</p>
+  {% endfor %}
+</section>
+{% endblock %}

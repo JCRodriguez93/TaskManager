@@ -20,7 +20,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif;
 .nav-links { display: flex; align-items: center; gap: 1.5rem; }
 .nav-links a { color: #fff; text-decoration: none; transition: color .2s; }
 .nav-links a:hover { color: var(--verde); }
-.nav-links .usuario { color: #bdc3c7; font-size: .9rem; }
+/* cambiado .usuario por .nav-usuario  porque si no, no lo veo.*/
+.nav-links .nav-usuario { color: #bdc3c7; font-size: .9rem; }
 .contenido { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
 .mensajes { max-width: 1200px; margin: 1rem auto 0; padding: 0 1.5rem; }
 .alerta { padding: .8rem 1.2rem; border-radius: 6px;
