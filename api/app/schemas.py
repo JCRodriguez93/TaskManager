@@ -119,3 +119,16 @@ class RespuestaPaginada(BaseModel, Generic[T]):
     pagina: int
     paginas: int
     items: List[T]
+
+class EstadisticasResponse(BaseModel):
+    total_proyectos: int
+    proyectos_activos: int
+    proyectos_pausados: int
+    total_tareas: int
+    tareas_pendientes: int
+    tareas_en_progreso: int
+    tareas_completadas: int
+    total_usuarios: int
+
+    class Config:
+        from_attributes = True
