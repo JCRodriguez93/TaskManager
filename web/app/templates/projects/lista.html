@@ -2,20 +2,20 @@
 {% extends 'base.html' %}
 {% block title %}Proyectos — TaskManager{% endblock %}
 {% block content %}
+<h1>Proyectos</h1>
+<!-- aunque sea, que no haga tanto daño a la vista-->
 <div class="page-header">
-  <h1>Proyectos</h1>
   <a href="{{ url_for('projects.nuevo') }}" class="btn">+ Nuevo proyecto</a>
+  <form method="GET" action="{{ url_for('projects.lista') }}" class="busqueda">
+    <div class="busqueda-contenedor">
+      {{ form_busqueda.q(class='input', placeholder='Buscar proyectos...', value=q) }}
+      {{ form_busqueda.submit(class='btn') }}
+      {% if q %}
+        <a href="{{ url_for('projects.lista') }}" class="btn btn-limpiar">× Limpiar</a>
+      {% endif %}
+    </div>
+  </form>
 </div>
-
-<form method="GET" action="{{ url_for('projects.lista') }}" class="busqueda">
-  <div style="display:flex; gap:.8rem; margin-bottom:1.5rem">
-    {{ form_busqueda.q(class='input', placeholder='Buscar proyectos...', value=q) }}
-    {{ form_busqueda.submit(class='btn') }}
-    {% if q %}
-      <a href="{{ url_for('projects.lista') }}" class="btn btn-sec">× Limpiar</a>
-    {% endif %}
-  </div>
-</form>
 
 {% if q %}
   <p class="resultado-busqueda">

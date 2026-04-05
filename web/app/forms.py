@@ -147,3 +147,45 @@ class LoginForm(FlaskForm):
     password = PasswordField("Contraseña", validators=[DataRequired()])
     recordarme = BooleanField("Recordarme en este dispositivo")
     submit = SubmitField("Iniciar sesión")
+
+class EditarPerfilForm(FlaskForm):
+    nombre = StringField(
+        'Nombre',
+        validators=[
+            DataRequired(message="El nombre es obligatorio"),
+            Length(min=2, max=50)
+        ]
+    )
+
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(message="El email es obligatorio"),
+            Email()
+        ]
+    )
+
+    password_actual = PasswordField(
+        'Contraseña actual',
+        validators=[
+            DataRequired(message="Debes introducir tu contraseña actual")
+        ]
+    )
+
+    password_nuevo = PasswordField(
+        'Nueva contraseña',
+        validators=[
+            Optional(),
+            Length(min=6, message="Mínimo 6 caracteres")
+        ]
+    )
+
+    confirmar_nuevo = PasswordField(
+        'Confirmar nueva contraseña',
+        validators=[
+            Optional(),
+            EqualTo('password_nuevo', message="Las contraseñas no coinciden")
+        ]
+    )
+
+    submit = SubmitField('Guardar cambios')

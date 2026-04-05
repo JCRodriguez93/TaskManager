@@ -1,0 +1,71 @@
+{% extends 'base.html' %} {% block title %}Perfil — TaskManager{% endblock %} {%
+block content %}
+<section class="contenido">
+  <h1 class="page-header">Perfil de {{ current_user.nombre }}</h1>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="numero">{{ stats.proyectos_creados }}</span>
+      <span class="etiqueta">Proyectos creados</span>
+    </div>
+
+    <div class="stat">
+      <span class="numero">{{ stats.tareas_completadas }}</span>
+      <span class="etiqueta">Tareas completadas</span>
+    </div>
+  </div>
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="perfil-layout">
+      <div class="tarjeta">
+        <h2 class="form-titulo">Información del usuario</h2>
+
+        <div class="form-group">
+          {{ form.nombre.label }} {{ form.nombre(class="input") }} {% for error
+          in form.nombre.errors %}
+          <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.email.label }} {{ form.email(class="input") }} {% for error in
+          form.email.errors %}
+          <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h2 class="form-titulo">Cambiar contraseña</h2>
+
+        <div class="form-group">
+          {{ form.password_actual.label }} {{
+          form.password_actual(class="input") }} {% for error in
+          form.password_actual.errors %}
+          <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.password_nuevo.label }} {{ form.password_nuevo(class="input")
+          }} {% for error in form.password_nuevo.errors %}
+          <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.confirmar_nuevo.label }} {{
+          form.confirmar_nuevo(class="input") }} {% for error in
+          form.confirmar_nuevo.errors %}
+          <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-sec">Guardar cambios</button>
+  </form>
+</section>
+{% endblock %}

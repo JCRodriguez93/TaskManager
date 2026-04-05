@@ -20,8 +20,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif;
 .nav-links { display: flex; align-items: center; gap: 1.5rem; }
 .nav-links a { color: #fff; text-decoration: none; transition: color .2s; }
 .nav-links a:hover { color: var(--verde); }
-/* cambiado .usuario por .nav-usuario  porque si no, no lo veo.*/
-.nav-links .nav-usuario { color: #bdc3c7; font-size: .9rem; }
+.nav-links .usuario { color: #bdc3c7; font-size: .9rem; }
 .contenido { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
 .mensajes { max-width: 1200px; margin: 1rem auto 0; padding: 0 1.5rem; }
 .alerta { padding: .8rem 1.2rem; border-radius: 6px;
@@ -31,8 +30,8 @@ body { font-family: 'Segoe UI', Arial, sans-serif;
 .alerta-error { background: #fdedec; color: #c0392b;
  border-left: 4px solid #c0392b; }
 .alerta-info { background: #d6eaf8; color: #1a5276;
- border-left: 4px solid #1a5276; };
- .page-header { display: flex; justify-content: space-between;
+ border-left: 4px solid #1a5276; } /* aquí había un semicolon extra*/
+.page-header { display: flex; justify-content: space-between;
  align-items: center; margin-bottom: 1.5rem; }
 .page-header h1 { font-size: 1.8rem; color: var(--azul-oscuro); }
 .breadcrumb { color: var(--texto-suave); text-decoration: none;
@@ -98,3 +97,122 @@ body { font-family: 'Segoe UI', Arial, sans-serif;
 .error-acciones { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; }
 footer { text-align: center; padding: 2rem; color: var(--texto-suave);
  margin-top: 3rem; border-top: 1px solid #e8e8e8; font-size: .9rem; }
+
+ /* Se que no son requeridos los siguientes estilos, pero es que me causa ansiedad
+ tener una interfaz que me rechina */
+
+
+.perfil-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+
+.form-titulo {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--azul-oscuro);
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--texto);
+  font-size: .9rem;
+}
+
+.input {
+  width: 100%;
+  padding: .65rem .9rem;
+  border: 1px solid #dcdfe3;
+  border-radius: 6px;
+  background: #fff;
+  font-size: .95rem;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.input:hover {
+  background: #fafafa;
+}
+
+.input:focus {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 2px rgba(36, 113, 163, .15);
+  outline: none;
+}
+
+
+/* La parte del buscador de la página principal */
+
+
+.page-header .acciones {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+}
+
+.page-header .input {
+  width: 220px;
+}
+
+
+/* Login y registro que no queden horrible */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.auth-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h1 {
+  margin-bottom: .5rem;
+  color: var(--azul-oscuro);
+}
+
+.auth-subtitulo {
+  color: var(--texto-suave);
+  font-size: .9rem;
+  margin-bottom: 1.5rem;
+}
+
+.campo {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.campo-check {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.auth-link {
+  margin-top: 1rem;
+  font-size: .9rem;
+  text-align: center;
+}
