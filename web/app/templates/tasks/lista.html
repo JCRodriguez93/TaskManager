@@ -1,0 +1,23 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Mis tareas — TaskManager{% endblock %}
+
+{% block content %}
+<h1>Mis tareas</h1>
+
+<div class="tareas-lista">
+  {% for t in tareas %}
+  <div class="tarea prioridad-{{ t.prioridad }}">
+    <div class="tarea-info">
+      <strong>{{ t.titulo }}</strong>
+      <span class="badge badge-{{ t.prioridad }}">{{ t.prioridad }}</span>
+    </div>
+
+    <div class="tarea-proyecto">
+      <small>{{ t.proyecto }}</small>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
