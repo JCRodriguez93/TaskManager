@@ -1,10 +1,12 @@
 # web/app/forms.py
+from datetime import date
+
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField, TextAreaField, SelectField,
     DateField, PasswordField, BooleanField, SubmitField
 )
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, ValidationError
 
 
 class ProyectoForm(FlaskForm):
@@ -31,10 +33,32 @@ class ProyectoForm(FlaskForm):
         format='%Y-%m-%d'
     )
     submit = SubmitField('Guardar proyecto')
+    
+    def validate_fecha_limite(self, field):
+        """La fecha límite no puede ser en el pasado."""
+        if field.data and field.data < date.today():
+            raise ValidationError(
+                'La fecha límite no puede ser anterior a hoy.'
+            )
+
+    def validate_titulo(self, field):
+        """El título no puede ser genérico."""
+        titulos_no_permitidos = ['proyecto', 'nuevo', 'test', 'prueba']
+
+        if field.data and field.data.lower().strip() in titulos_no_permitidos:
+            raise ValidationError(
+                f'"{field.data}" es demasiado genérico. '
+                'Por favor, elige un título más descriptivo.'
+            )
 
 
 class TareaForm(FlaskForm):
     """Formulario para crear y editar tareas."""
+
+    def __init__(self, proyecto=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.proyecto = proyecto
+
     titulo = StringField(
         'Título de la tarea',
         validators=[DataRequired(), Length(min=3, max=200)]
@@ -70,6 +94,14 @@ class TareaForm(FlaskForm):
     )
     submit = SubmitField('Guardar tarea')
 
+
+    def validate_titulo(self, campo):
+        titulo = campo.data.strip().lower()
+
+        if self.proyecto:
+            for tarea in self.proyecto["tareas"]:
+                if tarea["titulo"].strip().lower() == titulo:
+                    raise ValidationError("Ya existe una tarea con ese título en este proyecto.")
 
 class BusquedaForm(FlaskForm):
     """Formulario de búsqueda de proyectos y tareas."""

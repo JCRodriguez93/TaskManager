@@ -15,7 +15,7 @@ def nueva(pid):
     if not proyecto:
         abort(404)
 
-    form = TareaForm()
+    form = TareaForm(proyecto=proyecto)
 
     if form.validate_on_submit():
         # Calcular el próximo ID de tarea
@@ -51,7 +51,7 @@ def editar(pid, tid):
     if not proyecto or not tarea:
         abort(404)
 
-    form = TareaForm(data=tarea)
+    form = TareaForm(proyecto=proyecto, data=tarea)
 
     if form.validate_on_submit():
         tarea['titulo'] = form.titulo.data

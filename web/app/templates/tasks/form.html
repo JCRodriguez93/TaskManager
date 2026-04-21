@@ -10,8 +10,8 @@ endblock %} {% block content %}
     {{ form.hidden_tag() }}
 
     <div class="campo {% if form.titulo.errors %}con-error{% endif %}">
-      {{ form.titulo.label }} {{ form.titulo(class='input', placeholder='¿Qué
-      hay que hacer?') }} {% for error in form.titulo.errors %}
+      {{ form.titulo.label }} {{ form.titulo(class='input',
+       placeholder='¿Qué hay que hacer?') }} {% for error in form.titulo.errors %}
       <p class="error-msg">{{ error }}</p>
       {% endfor %}
     </div>
