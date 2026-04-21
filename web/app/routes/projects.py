@@ -1,5 +1,5 @@
-
 # web/app/routes/projects.py
+
 from flask import Blueprint, render_template, abort
 
 # url_prefix='/proyectos' hace que TODAS las rutas de este Blueprint
@@ -14,9 +14,24 @@ PROYECTOS_PRUEBA = [
         'estado': 'activo',
         'prioridad': 'alta',
         'tareas': [
-            {'id': 1, 'titulo': 'Wireframes de la home', 'estado': 'completada', 'prioridad': 'media'},
-            {'id': 2, 'titulo': 'Implementar nuevo header', 'estado': 'en_progreso', 'prioridad': 'alta'},
-            {'id': 3, 'titulo': 'Optimizar imágenes', 'estado': 'pendiente', 'prioridad': 'baja'},
+            {
+                'id': 1,
+                'titulo': 'Wireframes de la home',
+                'estado': 'completada',
+                'prioridad': 'media'
+            },
+            {
+                'id': 2,
+                'titulo': 'Implementar nuevo header',
+                'estado': 'en_progreso',
+                'prioridad': 'alta'
+            },
+            {
+                'id': 3,
+                'titulo': 'Optimizar imágenes',
+                'estado': 'pendiente',
+                'prioridad': 'baja'
+            },
         ]
     },
     {
@@ -26,8 +41,18 @@ PROYECTOS_PRUEBA = [
         'estado': 'activo',
         'prioridad': 'urgente',
         'tareas': [
-            {'id': 4, 'titulo': 'Configurar repositorio', 'estado': 'completada', 'prioridad': 'alta'},
-            {'id': 5, 'titulo': 'Diseño de la arquitectura', 'estado': 'en_progreso', 'prioridad': 'urgente'},
+            {
+                'id': 4,
+                'titulo': 'Configurar repositorio',
+                'estado': 'completada',
+                'prioridad': 'alta'
+            },
+            {
+                'id': 5,
+                'titulo': 'Diseño de la arquitectura',
+                'estado': 'en_progreso',
+                'prioridad': 'urgente'
+            },
         ]
     },
     {
@@ -48,9 +73,14 @@ def lista():
 
 @projects.route('/<int:pid>')
 def detalle(pid):
-    proyecto = next((p for p in PROYECTOS_PRUEBA if p['id'] == pid), None)
+    proyecto = next(
+        (p for p in PROYECTOS_PRUEBA if p['id'] == pid),
+        None
+    )
+
     if proyecto is None:
         abort(404)
+
     return render_template('projects/detalle.html', proyecto=proyecto)
 
 
