@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request,
 from app import db
 from app.models import Proyecto, Tarea
 from app.forms import TareaForm
+from sqlalchemy import case
 
 tasks = Blueprint('tasks', __name__)
 
@@ -79,11 +80,14 @@ def eliminar(pid, tid):
 
 @tasks.route('/mis-tareas')
 def mis_tareas():
-    # Recopilar todas las tareas de todos los proyectos
-    todas = Tarea.query.all()
+    
+    orden = case(
+        (Tarea.prioridad == 'urgente', 0),
+        (Tarea.prioridad == 'alta', 1),
+        (Tarea.prioridad == 'media', 2),
+        else_=3
+    )
 
-    # Ordenar por prioridad
-    orden = {'urgente': 0, 'alta': 1, 'media': 2, 'baja': 3}
-    todas = sorted(todas, key=lambda t: orden.get(t.prioridad, 99))
+    tareas = Tarea.query.order_by(orden).all()
 
-    return render_template('tasks/lista.html', tareas=todas)
+    return render_template('tasks/lista.html', tareas=tareas)
