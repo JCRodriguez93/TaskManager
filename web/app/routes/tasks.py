@@ -28,13 +28,11 @@ def nueva(pid):
             'descripcion': form.descripcion.data or '',
             'prioridad': form.prioridad.data,
             'estado': form.estado.data,
-            'fecha_limite': str(form.fecha_limite.data)
-            if form.fecha_limite.data else None,
+            'fecha_limite': str(form.fecha_limite.data) if form.fecha_limite.data else None,
         }
 
         proyecto['tareas'].append(nueva_tarea)
         flash(f'Tarea "{nueva_tarea["titulo"]}" creada.', 'success')
-
         return redirect(url_for('projects.detalle', pid=pid))
 
     return render_template(
@@ -60,7 +58,7 @@ def editar(pid, tid):
         tarea['descripcion'] = form.descripcion.data or ''
         tarea['prioridad'] = form.prioridad.data
         tarea['estado'] = form.estado.data
-        proyecto['fecha_limite']= str(form.fecha_limite.data) if form.fecha_limite.data else None
+        tarea['fecha_limite'] = str(form.fecha_limite.data) if form.fecha_limite.data else None
 
         flash('Tarea actualizada.', 'success')
         return redirect(url_for('projects.detalle', pid=pid))
@@ -76,12 +74,10 @@ def editar(pid, tid):
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/eliminar', methods=['POST'])
 def eliminar(pid, tid):
     proyecto = next((p for p in PROYECTOS if p['id'] == pid), None)
-
     if not proyecto:
         abort(404)
 
     proyecto['tareas'] = [t for t in proyecto['tareas'] if t['id'] != tid]
-
     flash('Tarea eliminada.', 'success')
     return redirect(url_for('projects.detalle', pid=pid))
 
@@ -90,14 +86,9 @@ def eliminar(pid, tid):
 def mis_tareas():
     # Recopilar todas las tareas de todos los proyectos
     todas = []
-
     for p in PROYECTOS:
         for t in p['tareas']:
-            todas.append({
-                **t,
-                'proyecto': p['titulo'],
-                'proyecto_id': p['id']
-            })
+            todas.append({**t, 'proyecto': p['titulo'], 'proyecto_id': p['id']})
 
     # Ordenar por prioridad
     orden = {'urgente': 0, 'alta': 1, 'media': 2, 'baja': 3}

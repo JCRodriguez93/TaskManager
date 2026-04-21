@@ -20,6 +20,7 @@ length / total * 100) | round | int %}
 {% endif %}
 <div class="tareas-header">
   <h2>Tareas ({{ total }})</h2>
+    <a href="{{ url_for('tasks.nueva', pid=proyecto.id) }}" class="btn">+ Nueva tarea</a>
 </div>
 {% for tarea in proyecto.tareas %}
 <div class="tarea prioridad-{{ tarea.prioridad }}">
@@ -38,13 +39,17 @@ length / total * 100) | round | int %}
   
 
   <!-- Formulario para Eliminar -->
-  <form
-   
-  >
+  <div class="acciones-tarea">
+
+  <form action="{{ url_for('tasks.eliminar', pid=proyecto.id, tid=tarea.id) }}" method="POST">
+    
     <button type="submit" onclick="return confirm('¿Eliminar?');">
       🗑️ Borrar
     </button>
+
   </form>
+
+</div>
 </div>
 {% else %}
 <p class="vacio">Este proyecto no tiene tareas todavía.</p>
