@@ -9,7 +9,7 @@ endblock %} {% block content %}
 <p class="descripcion-proyecto">{{ proyecto.descripcion }}</p>
 {# Calcular el progreso del proyecto #} {% set completadas = proyecto.tareas |
 selectattr('estado', 'equalto', 'completada') | list %} {% set total =
-proyecto.tareas | length %} {% if total > 0 %} {% set progreso = (completadas |
+proyecto.tareas.count() %} {% if total > 0 %} {% set progreso = (completadas |
 length / total * 100) | round | int %}
 <div class="progreso-container">
   <div class="progreso-label">Progreso: {{ progreso }}%</div>
