@@ -4,11 +4,13 @@ from app import db
 from app.models import Proyecto, Tarea
 from app.forms import TareaForm
 from sqlalchemy import case
+from flask_login import login_required, current_user
 
 tasks = Blueprint('tasks', __name__)
 
 
 @tasks.route('/proyectos/<int:pid>/tareas/nueva', methods=['GET', 'POST'])
+@login_required
 def nueva(pid):
     proyecto = Proyecto.query.get_or_404(pid)
 
@@ -21,7 +23,8 @@ def nueva(pid):
             prioridad=form.prioridad.data,
             estado=form.estado.data,
             fecha_limite=form.fecha_limite.data,
-            proyecto_id=pid
+            proyecto_id=pid,
+            asignado_id=current_user.id
         )
 
         db.session.add(nueva_tarea)
@@ -39,6 +42,7 @@ def nueva(pid):
 
 
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/editar', methods=['GET', 'POST'])
+@login_required
 def editar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
     tarea = Tarea.query.get_or_404(tid)
@@ -64,6 +68,7 @@ def editar(pid, tid):
 
 
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/eliminar', methods=['POST'])
+@login_required
 def eliminar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
     tarea = Tarea.query.get_or_404(tid)
@@ -79,15 +84,24 @@ def eliminar(pid, tid):
 
 
 @tasks.route('/mis-tareas')
+@login_required
 def mis_tareas():
     
     orden = case(
         (Tarea.prioridad == 'urgente', 0),
         (Tarea.prioridad == 'alta', 1),
         (Tarea.prioridad == 'media', 2),
+        (Tarea.prioridad == 'baja', 3),
         else_=3
     )
-
-    tareas = Tarea.query.order_by(orden).all()
+    if current_user.es_admin:
+        tareas = Tarea.query.order_by(orden).all()
+    else:
+        tareas = (
+            Tarea.query
+            .filter_by(asignado_id=current_user.id)
+            .order_by(orden)
+            .all()
+        )
 
     return render_template('tasks/lista.html', tareas=tareas)
