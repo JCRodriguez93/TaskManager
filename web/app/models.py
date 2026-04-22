@@ -1,8 +1,15 @@
 # web/app/models.py
 
-from app import db
+from app import db, login_manager
+from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+
+
+# ── Flask-Login: cargar usuario desde la sesión ──────────────────────
+@login_manager.user_loader
+def cargar_usuario(user_id):
+    return Usuario.query.get(int(user_id))
 
 
 # ── Tabla de unión para la relación muchos-a-muchos Tarea ↔ Etiqueta ──
@@ -24,7 +31,7 @@ tarea_etiqueta = db.Table(
 )
 
 
-class Usuario(db.Model):
+class Usuario(UserMixin, db.Model): # UserMixin PRIMERO, db.Model SEGUNDO
     __tablename__ = 'usuarios'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -50,15 +57,22 @@ class Usuario(db.Model):
         foreign_keys='Tarea.asignado_id'
     )
 
+    # ── Métodos de seguridad ──────────────────────────────────────────
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
 
+    # ── Propiedades de rol ────────────────────────────────────────────
     @property
     def es_admin(self):
         return self.rol == 'admin'
+
+    # ── Sobrescribir is_active de UserMixin para respetar el campo 'activo' ──
+    @property
+    def is_active(self):
+        return self.activo
 
     def __repr__(self):
         return f'<Usuario {self.email}>'

@@ -1,16 +1,92 @@
-
 # web/app/routes/auth.py
-from flask import Blueprint, render_template, redirect, url_for, session, flash
-auth = Blueprint('auth', __name__)
-@auth.route('/login')
-def login():
-# Simulamos un login por ahora
-    session['usuario'] = {'nombre': 'Usuario de Prueba'} # Login simulado
-    flash('Has iniciado sesión correctamente', 'success')
-    return redirect(url_for('main.index'))
+from flask import Blueprint, render_template, flash, redirect, url_for, request
+from flask_login import login_user, logout_user, login_required, current_user
+from app import db
 
+from app.models import Usuario
+from app.forms import RegistroForm, LoginForm
+
+auth = Blueprint('auth', __name__, url_prefix='/auth')
+
+
+# ── Registro ─────────────────────────────────────────────────────────
+@auth.route('/registro', methods=['GET', 'POST'])
+def registro():
+    # Si ya está autenticado, redirigir al dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    form = RegistroForm()
+
+    if form.validate_on_submit():
+        # Verificar que el email no está ya registrado
+        if Usuario.query.filter_by(email=form.email.data.lower()).first():
+            flash(
+                'Ya existe una cuenta con ese correo electrónico. ¿Quieres iniciar sesión?',
+                'error'
+            )
+            return redirect(url_for('auth.registro'))
+
+        # Crear el usuario (sin guardar la contraseña en texto plano)
+        usuario = Usuario(
+            nombre=form.nombre.data.strip(),
+            email=form.email.data.lower().strip()
+        )
+
+        usuario.set_password(form.password.data)  # Hashea la contraseña
+
+        db.session.add(usuario)
+        db.session.commit()
+
+        flash('¡Cuenta creada con éxito! Ya puedes iniciar sesión.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/registro.html', form=form)
+
+
+# ── Login ─────────────────────────────────────────────────────────────
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        usuario = Usuario.query.filter_by(
+            email=form.email.data.lower()
+        ).first()
+
+        # Verificar usuario, contraseña Y que la cuenta esté activa
+        if (
+            usuario and
+            usuario.check_password(form.password.data) and
+            usuario.is_active
+        ):
+            # login_user() abre la sesión
+            login_user(usuario, remember=form.recordarme.data)
+
+            # Redirección segura
+            next_page = request.args.get('next')
+            if next_page and not next_page.startswith('http'):
+                return redirect(next_page)
+
+            flash(f'¡Bienvenido de nuevo, {usuario.nombre}!', 'success')
+            return redirect(url_for('main.index'))
+
+        # Mensaje genérico por seguridad
+        flash('Correo electrónico o contraseña incorrectos.', 'error')
+
+    return render_template('auth/login.html', form=form)
+
+
+# ── Logout ────────────────────────────────────────────────────────────
 @auth.route('/logout')
+@login_required  # Solo puede hacer logout quien esté autenticado
 def logout():
-    session.pop('usuario', None)
-    flash('Has cerrado sesión', 'info')
+    nombre = current_user.nombre
+
+    logout_user()  # Elimina la sesión del usuario
+
+    flash(f'Hasta pronto, {nombre}. Sesión cerrada correctamente.', 'info')
     return redirect(url_for('main.index'))
