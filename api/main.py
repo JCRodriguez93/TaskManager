@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import projects, tasks
+from app.routers import projects, tasks, estadisticas
 
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.add_middleware(
 # Registrar routers con prefijo de versión en la URL
 app.include_router(projects.router, prefix='/api/v1')
 app.include_router(tasks.router, prefix='/api/v1')
+app.include_router(estadisticas.router, prefix="/api/v1")
 
 
 @app.get('/', tags=['Estado'])
