@@ -1,0 +1,72 @@
+@baseUrl = http://localhost:8000/api/v1
+@email = test@test.com
+@password = password123
+
+### =========================================
+### 1) LOGIN para obtener tokens (200)
+### =========================================
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&username={{email}}&password={{password}}
+
+@access_token = CAMBIAR_POR_EL_ACCESS_TOKEN_OBTENIDO_DEL_LOGIN
+@refresh_token = CAMBIAR_POR_EL_REFRESH_TOKEN_OBTENIDO_DEL_LOGIN
+
+
+### =========================================
+### 2) USAR access_token (200)
+### =========================================
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{access_token}}
+
+
+### =========================================
+### 3) REFRESH para obtener nuevo access_token (200)
+### =========================================
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refresh_token}}"
+}
+
+@new_access_token = CAMBIAR_POR_EL_NOVO_ACCESS_TOKEN_OBTENIDO_DEL_REFRESH
+
+
+### =========================================
+### 4) USAR NUEVO access_token (200)
+### =========================================
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{new_access_token}}
+
+
+### =========================================
+###  CASOS DE ERROR DONDE SE VA TODO AL CARAJO (401)
+### =========================================
+
+### a) Enviar access_token como refresh_token → 401
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{access_token}}"
+}
+
+
+### b) Enviar string aleatorio → 401
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "esto_no_es_un_token_valido"
+}
+
+
+### c) Token manipulado → 401
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refresh_token}}X"
+}
