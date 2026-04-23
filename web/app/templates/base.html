@@ -22,7 +22,10 @@
         {% if current_user.es_admin %}
         <a href="{{ url_for('main.admin') }}" class="nav-admin">⚙ Admin</a>
         {% endif %}
-        <span class="nav-usuario">{{ current_user.nombre }}</span>
+        <!--Creo que queda mejor si es un enlace -->
+        <a href="{{ url_for('main.perfil') }}" class="nav-usuario">
+          {{ current_user.nombre }}
+        </a>
         <a href="{{ url_for('auth.logout') }}" class="nav-logout">Salir</a>
         {% else %}
         <a href="{{ url_for('auth.login') }}">Iniciar sesión</a>

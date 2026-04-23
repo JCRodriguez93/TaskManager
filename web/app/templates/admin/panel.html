@@ -1,0 +1,86 @@
+{% extends 'base.html' %} {% block title %}Panel Admin — TaskManager{% endblock
+%} {% block content %}
+
+<section class="dashboard">
+  <h1>Panel de administración</h1>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="numero">{{ stats.total_proyectos }}</span>
+      <span class="etiqueta">Proyectos totales</span>
+    </div>
+
+    <div class="stat">
+      <span class="numero">{{ stats.total_tareas }}</span>
+      <span class="etiqueta">Tareas totales</span>
+    </div>
+
+    <div class="stat">
+      <span class="numero">{{ stats.usuarios_activos }}</span>
+      <span class="etiqueta">Usuarios activos</span>
+    </div>
+  </div>
+
+  <h2>Todos los proyectos</h2>
+
+  {% for proyecto in proyectos %}
+
+  <div class="tarea">
+    <strong>{{ proyecto.titulo }}</strong>
+
+    <div class="tarea-info">
+      <span class="proyecto">
+        Propietario: {{ proyecto.propietario.nombre }}
+      </span>
+
+      <span class="badge badge-{{ proyecto.estado }}">
+        {{ proyecto.estado }}
+      </span>
+    </div>
+  </div>
+  {% else %}
+  <p class="vacio">No hay proyectos registrados.</p>
+  {% endfor %}
+
+  <h2>Usuarios registrados</h2>
+
+  {% for usuario in usuarios %}
+
+  <div class="tarea">
+    <strong>{{ usuario.nombre }}</strong>
+
+    <div class="tarea-info">
+      <span>Rol: {{ usuario.rol }}</span>
+
+      <span class="badge"> {{ usuario.creado_en.strftime('%d/%m/%Y') }} </span>
+
+      <span
+        class="badge {{ 'badge-completado' if usuario.activo else 'badge-alta' }}"
+      >
+        {{ 'Activo' if usuario.activo else 'Inactivo' }}
+      </span>
+
+      {% if usuario.id != current_user.id %}
+      <form
+        action="{{ url_for('main.toggle_activo', id=usuario.id) }}"
+        method="POST"
+        style="display: inline"
+      >
+        <button
+          type="submit"
+          class="btn btn-sm {{ 'btn-danger' if usuario.activo else 'btn-sec' }}"
+        >
+          {% if usuario.activo %} Desactivar {% else %} Activar {% endif %}
+        </button>
+      </form>
+      {% else %}
+      <span class="badge">Tú</span>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p class="vacio">No hay usuarios registrados.</p>
+  {% endfor %}
+</section>
+
+{% endblock %}
