@@ -56,6 +56,17 @@
     <div class="tarjeta-footer">
       <span>{{ p.tareas.count() }} tareas</span>
       <a href="{{ url_for('projects.detalle', pid=p.id) }}">Ver detalles →</a>
+      <form action="{{ url_for('projects.eliminar', pid=p.id) }}"
+          method="POST"
+          style="display:inline">
+
+      <button type="submit"
+              class="btn btn-danger"
+              onclick="return confirm('¿Eliminar este proyecto?');">
+        🗑 Eliminar
+      </button>
+
+    </form>
     </div>
   </div>
   {% endfor %}

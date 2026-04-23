@@ -14,6 +14,9 @@ tasks = Blueprint('tasks', __name__)
 def nueva(pid):
     proyecto = Proyecto.query.get_or_404(pid)
 
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
+        
     form = TareaForm()
 
     if form.validate_on_submit():
@@ -47,6 +50,9 @@ def editar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
     tarea = Tarea.query.get_or_404(tid)
 
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
+
     if tarea.proyecto_id != pid:
         abort(404)
 
@@ -72,6 +78,9 @@ def editar(pid, tid):
 def eliminar(pid, tid):
     proyecto = Proyecto.query.get_or_404(pid)
     tarea = Tarea.query.get_or_404(tid)
+
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
 
     if tarea.proyecto_id != pid:
         abort(404)

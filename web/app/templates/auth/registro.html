@@ -8,8 +8,8 @@
     <form method="POST" novalidate>
       {{ form.hidden_tag() }}
       <div class="campo {% if form.nombre.errors %}con-error{% endif %}">
-        {{ form.nombre.label }} {{ form.nombre(class='input', placeholder='Tu
-        nombre completo') }} {% for error in form.nombre.errors %}
+        {{ form.nombre.label }} {{ form.nombre(class='input',
+         placeholder='Tu nombre completo') }} {% for error in form.nombre.errors %}
         <p class="error-msg">{{ error }}</p>
         {% endfor %}
       </div>

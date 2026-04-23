@@ -45,6 +45,10 @@ def lista():
 @login_required
 def detalle(pid):
     proyecto = Proyecto.query.get_or_404(pid)
+    
+    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
+        abort(403)
+        
     tareas = proyecto.tareas.order_by(Tarea.creado_en.desc()).all()
     return render_template(
         'projects/detalle.html',

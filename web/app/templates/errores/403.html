@@ -1,0 +1,17 @@
+<!-- web/app/templates/errores/403.html -->
+{% extends 'base.html' %}
+
+{% block title %}Acceso denegado — TaskManager{% endblock %}
+
+{% block content %}
+<div class="error-page">
+  <div class="error-codigo">403</div>
+  <h1>Acceso denegado</h1>
+  <p>No tienes permisos para acceder a esta página.</p>
+
+  <div class="error-acciones">
+    <a href="{{ url_for('main.index') }}" class="btn">Ir al inicio</a>
+    <a href="{{ url_for('projects.lista') }}" class="btn btn-sec">Ver proyectos</a>
+  </div>
+</div>
+{% endblock %}
