@@ -1,0 +1,97 @@
+### =========================================
+### a) CREAR PROYECTO
+### =========================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto de Prueba",
+  "descripcion": "Proyecto para probar tareas",
+  "fecha_limite": "2026-12-31"
+}
+
+### =========================================
+### b) CREAR 3 TAREAS EN EL PROYECTO
+### =========================================
+
+POST http://127.0.0.1:8000/api/v1/proyectos/6/tareas
+Content-Type: application/json
+
+{
+  "titulo": "Tarea 1",
+  "descripcion": "Descripción de la tarea 1",
+  "prioridad": "alta",
+  "estado": "pendiente",
+  "fecha_limite": "2026-04-25",
+  "proyecto_id": 6,
+  "asignado_id": 1
+}
+
+###
+
+POST http://127.0.0.1:8000/api/v1/proyectos/6/tareas
+Content-Type: application/json
+
+{
+  "titulo": "Tarea 2",
+  "descripcion": "Descripción de la tarea 2",
+  "prioridad": "alta",
+  "estado": "pendiente",
+  "fecha_limite": "2026-04-25",
+  "proyecto_id": 6,
+  "asignado_id": 1
+}
+
+###
+
+POST http://127.0.0.1:8000/api/v1/proyectos/6/tareas
+Content-Type: application/json
+
+{
+  "titulo": "Tarea 3",
+  "descripcion": "Tercera tarea",
+  "prioridad": "urgente",
+  "estado": "pendiente",
+  "fecha_limite": "2026-12-03",
+  "proyecto_id": 6,
+  "asignado_id": 1
+}
+
+
+### =========================================
+### c) CAMBIAR ESTADO A EN_PROGRESO
+### =========================================
+PATCH http://127.0.0.1:8000/api/v1/tareas/12/estado
+Content-Type: application/json
+
+{
+  "nuevo_estado": "en_progreso"
+}
+
+
+### =========================================
+### d) CAMBIAR OTRA TAREA A COMPLETADA
+### =========================================
+PATCH http://127.0.0.1:8000/api/v1/tareas/13/estado
+Content-Type: application/json
+
+{
+  "nuevo_estado": "completada"
+}
+
+
+### =========================================
+### e) VER PROGRESO DEL PROYECTO
+### =========================================
+GET http://127.0.0.1:8000/api/v1/proyectos/6
+
+
+### =========================================
+### f) ESTADO INVÁLIDO (400)
+### =========================================
+PATCH http://127.0.0.1:8000/api/v1/tareas/6/estado
+Content-Type: application/json
+
+{
+  "nuevo_estado": "terminada"
+}
