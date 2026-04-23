@@ -13,6 +13,12 @@ logging.basicConfig(
 )
 
 
+# api/main.py — añadir después de crear la instancia app
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError
+
 app = FastAPI(
     title='TaskManager API',
     description='''
@@ -22,14 +28,6 @@ La documentación completa está disponible en /docs.
 ''',
     version='1.0.0'
 )
-
-# api/main.py — añadir después de crear la instancia app
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import IntegrityError
-
-app = FastAPI(title='TaskManager API', version='1.0.0')
 
 # ── Manejador para errores de validación Pydantic (422) ──────────────
 # Se activa cuando el cliente envía datos con tipos incorrectos o
@@ -107,7 +105,12 @@ app.include_router(tasks.router, prefix='/api/v1')
 app.include_router(estadisticas.router, prefix="/api/v1")
 
 
-@app.get('/', tags=['Estado'])
+@app.get(
+    '/',
+    tags=['Estado'],
+    summary='Ruta raíz',
+    description='Punto de entrada informativo que confirma el funcionamiento de la API y enlaza a la documentación.'
+)
 def root():
     return {
         'mensaje': 'TaskManager API v1.0',
@@ -115,6 +118,11 @@ def root():
     }
 
 
-@app.get('/health', tags=['Estado'])
+@app.get(
+    '/health',
+    tags=['Estado'],
+    summary='Verificar salud',
+    description='Endpoint simple para monitoreo de disponibilidad del servicio.'
+)
 def health():
     return {'status': 'ok'}

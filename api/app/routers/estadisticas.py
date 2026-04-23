@@ -7,7 +7,11 @@ from app.schemas import EstadisticasResponse
 router = APIRouter(prefix="/estadisticas", tags=["Estadísticas"])
 
 
-@router.get("/", response_model=EstadisticasResponse)
+@router.get(
+    "/",
+    response_model=EstadisticasResponse,
+    summary='Obtener estadísticas generales',
+    description='Proporciona un resumen de las métricas clave del sistema, incluyendo el número total de proyectos, tareas por estado y usuarios.')
 def obtener_estadisticas(db: Session = Depends(get_db)):
     return EstadisticasResponse(
         total_proyectos=db.query(Proyecto).count(),

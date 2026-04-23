@@ -12,14 +12,19 @@ ESTADOS_VALIDOS = ['pendiente', 'en_progreso', 'revision', 'completada']
 PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'urgente']
 
 # ── GET /tareas/ — Listar con filtros ────────────────────────────────
-@router.get('/', response_model=List[TareaResponse])
+@router.get(
+    '/',
+    response_model=List[TareaResponse],
+    summary='Listar tareas',
+    description='Obtiene una lista de tareas permitiendo filtrar por proyecto, prioridad, estado y usuario asignado. Incluye paginación básica mediante skip y limit.'
+)
 def listar(
-    proyecto_id: Optional[int] = Query(None),
-    prioridad: Optional[str] = Query(None),
-    estado: Optional[str] = Query(None),
-    asignado_id: Optional[int] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
+    proyecto_id: Optional[int] = Query(None, description='Filtrar tareas pertenecientes a un ID de proyecto específico'),
+    prioridad: Optional[str] = Query(None, description='Filtrar por nivel de prioridad: baja, media, alta o urgente'),
+    estado: Optional[str] = Query(None, description='Filtrar por estado actual: pendiente, en_progreso, revision o completada'),
+    asignado_id: Optional[int] = Query(None, description='Filtrar tareas asignadas a un ID de usuario concreto'),
+    skip: int = Query(0, ge=0, description='Número de registros a omitir (útil para paginación manual)'),
+    limit: int = Query(50, ge=1, le=200, description='Cantidad máxima de registros a retornar (máximo 200)'),
     db: Session = Depends(get_db)
 ):
     query = db.query(Tarea)
@@ -49,7 +54,12 @@ def listar(
     return query.offset(skip).limit(limit).all()
 
 # ── GET /tareas/{id} ─────────────────────────────────────────────────
-@router.get('/{tarea_id}', response_model=TareaResponse)
+@router.get(
+    '/{tarea_id}',
+    response_model=TareaResponse,
+    summary='Obtener una tarea',
+    description='Recupera los detalles completos de una tarea específica identificada por su ID único.'
+)
 def obtener(tarea_id: int, db: Session = Depends(get_db)):
     tarea = db.query(Tarea).filter_by(id=tarea_id).first()
 
@@ -62,7 +72,9 @@ def obtener(tarea_id: int, db: Session = Depends(get_db)):
 @router.post(
     '/',
     response_model=TareaResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
+    summary='Crear una tarea',
+    description='Crea una nueva tarea. Es obligatorio proporcionar un ID de proyecto válido al que asociarla.'
 )
 def crear(datos: TareaCreate, db: Session = Depends(get_db)):
     # Verificar que el proyecto existe
@@ -83,7 +95,12 @@ def crear(datos: TareaCreate, db: Session = Depends(get_db)):
     return tarea
 
 # ── PATCH /tareas/{id} — Actualizar parcial ──────────────────────────
-@router.patch('/{tarea_id}', response_model=TareaResponse)
+@router.patch(
+    '/{tarea_id}',
+    response_model=TareaResponse,
+    summary='Actualizar una tarea',
+    description='Permite la actualización parcial de los campos de una tarea. Solo se modificarán los campos enviados en el cuerpo de la petición.'
+)
 def actualizar(
     tarea_id: int,
     datos: TareaUpdate,
@@ -141,7 +158,12 @@ def cambiar_estado(
     return tarea
 
 # ── DELETE /tareas/{id} ───────────────────────────────────────────────
-@router.delete('/{tarea_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{tarea_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Eliminar una tarea',
+    description='Elimina permanentemente una tarea de la base de datos. Esta operación no se puede deshacer.'
+)
 def eliminar(tarea_id: int, db: Session = Depends(get_db)):
     tarea = db.query(Tarea).filter_by(id=tarea_id).first()
 

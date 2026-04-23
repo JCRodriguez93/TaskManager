@@ -22,12 +22,30 @@ class ProyectoBase(BaseModel):
 
 class ProyectoCreate(ProyectoBase):
     """Schema para crear un proyecto. Hereda de ProyectoBase."""
-    pass
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "titulo": "Rediseño de la intranet",
+                "descripcion": "Actualizar la intranet corporativa con nuevas funcionalidades y una interfaz moderna.",
+                "fecha_limite": "2025-12-31"
+            }
+        }
+    }
 
 
 class ProyectoUpdate(BaseModel):
     """Schema para actualizar un proyecto. Todos los campos son opcionales."""
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "titulo": "Rediseño de la intranet (v2)",
+                "descripcion": "Actualización de la intranet corporativa, fase 2: integración con CRM.",
+                "estado": "en_progreso",
+                "fecha_limite": "2026-06-30"
+            }
+        }
+    }
     titulo: Optional[str] = Field(None, min_length=3, max_length=100)
     descripcion: Optional[str] = None
     estado: Optional[str] = None
@@ -52,15 +70,22 @@ class ProyectoResponse(ProyectoBase):
 # ═══════════════════════════════════════════════════
 
 class TareaBase(BaseModel):
-    titulo: str = Field(..., min_length=3, max_length=200)
-    descripcion: Optional[str] = None
+    titulo: str = Field(
+        ...,
+        min_length=3,
+        max_length=200,
+        description='Título de la tarea'
+    )
+    descripcion: Optional[str] = Field(None, max_length=500)
     prioridad: str = Field(
         'media',
-        pattern='^(baja|media|alta|urgente)$'
+        pattern='^(baja|media|alta|urgente)$',
+        description='Nivel de prioridad de la tarea'
     )
     estado: str = Field(
         'pendiente',
-        pattern='^(pendiente|en_progreso|revision|completada)$'
+        pattern='^(pendiente|en_progreso|revision|completada)$',
+        description='Estado actual de la tarea'
     )
     fecha_limite: Optional[date] = None
 
@@ -69,8 +94,32 @@ class TareaCreate(TareaBase):
     proyecto_id: int
     asignado_id: Optional[int] = None
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "titulo": "Desarrollar módulo de autenticación",
+                "descripcion": "Implementar el sistema de login y registro de usuarios.",
+                "prioridad": "alta",
+                "estado": "en_progreso",
+                "fecha_limite": "2024-07-15",
+                "proyecto_id": 1,
+                "asignado_id": 2
+            }
+        }
+    }
+
 
 class TareaUpdate(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "titulo": "Refactorizar módulo de autenticación",
+                "prioridad": "urgente",
+                "estado": "revision",
+                "asignado_id": 3
+            }
+        }
+    }
     titulo: Optional[str] = None
     descripcion: Optional[str] = None
     prioridad: Optional[str] = None
@@ -94,9 +143,24 @@ class TareaResponse(TareaBase):
 # ═══════════════════════════════════════════════════
 
 class UsuarioCreate(BaseModel):
-    nombre: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
-    password: str = Field(..., min_length=8)
+    nombre: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        description='Nombre completo del usuario'
+    )
+    email: EmailStr = Field(..., description='Correo electrónico único del usuario')
+    password: str = Field(..., min_length=8, description='Contraseña del usuario (mínimo 8 caracteres)')
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "nombre": "Juan Pérez",
+                "email": "juan.perez@example.com",
+                "password": "passwordSegura123"
+            }
+        }
+    }
 
 
 class UsuarioResponse(BaseModel):

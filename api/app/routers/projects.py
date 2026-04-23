@@ -15,11 +15,12 @@ router = APIRouter(prefix='/proyectos', tags=['Proyectos'])
 @router.get(
     '/',
     response_model=RespuestaPaginada[ProyectoResponse],
-    summary='Listar proyectos'
+    summary='Listar proyectos',
+    description='Obtiene una lista paginada de proyectos, con opciones de filtrado por título, descripción y estado.'
 )
 def listar(
-    pagina: int = Query(1, ge=1),
-    tamano: int = Query(10, ge=1, le=100),
+    pagina: int = Query(1, ge=1, description='Número de página a recuperar (mínimo 1)'),
+    tamano: int = Query(10, ge=1, le=100, description='Cantidad de proyectos por página (máximo 100)'),
     q: Optional[str] = Query(None, description='Buscar en título y descripción'),
     estado: Optional[str] = Query(None, description='activo | pausado | completado'),
     db: Session = Depends(get_db)
@@ -53,7 +54,8 @@ def listar(
 @router.get(
     '/{proyecto_id}',
     response_model=ProyectoResponse,
-    summary='Obtener un proyecto'
+    summary='Obtener un proyecto',
+    description='Obtiene los detalles de un proyecto específico por su ID.'
 )
 def obtener(proyecto_id: int, db: Session = Depends(get_db)):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
@@ -72,7 +74,8 @@ def obtener(proyecto_id: int, db: Session = Depends(get_db)):
     '/',
     response_model=ProyectoResponse,
     status_code=status.HTTP_201_CREATED,
-    summary='Crear un proyecto'
+    summary='Crear un proyecto',
+    description='Crea un nuevo proyecto con el título, descripción y fecha límite proporcionados.'
 )
 def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
     # Verificar que no existe otro proyecto con el mismo título (opcional)
@@ -104,7 +107,8 @@ def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
 @router.put(
     '/{proyecto_id}',
     response_model=ProyectoResponse,
-    summary='Actualizar un proyecto completo'
+    summary='Actualizar un proyecto completo',
+    description='Actualiza completamente un proyecto existente. Todos los campos editables deben ser proporcionados.'
 )
 def actualizar(
     proyecto_id: int,
@@ -130,7 +134,8 @@ def actualizar(
 @router.patch(
     '/{proyecto_id}',
     response_model=ProyectoResponse,
-    summary='Actualizar campos específicos de un proyecto'
+    summary='Actualizar campos específicos de un proyecto',
+    description='Actualiza uno o más campos de un proyecto existente. Solo los campos proporcionados serán modificados.'
 )
 def actualizar_parcial(
     proyecto_id: int,
@@ -159,7 +164,8 @@ def actualizar_parcial(
 @router.delete(
     '/{proyecto_id}',
     status_code=status.HTTP_204_NO_CONTENT,
-    summary='Eliminar un proyecto'
+    summary='Eliminar un proyecto',
+    description='Elimina un proyecto existente por su ID. Esto también eliminará todas las tareas asociadas al proyecto.'
 )
 def eliminar(proyecto_id: int, db: Session = Depends(get_db)):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
@@ -180,12 +186,13 @@ from app.models import Tarea
     '/{proyecto_id}/tareas',
     response_model=List[TareaResponse],
     tags=['Proyectos', 'Tareas'],  # Aparece en ambas secciones de Swagger
-    summary='Tareas de un proyecto'
+    summary='Tareas de un proyecto',
+    description='Obtiene una lista de tareas asociadas a un proyecto específico, con opciones de filtrado por estado y prioridad.'
 )
 def tareas_del_proyecto(
     proyecto_id: int,
-    estado: Optional[str] = Query(None),
-    prioridad: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None, description='Filtrar tareas por estado (pendiente, en_progreso, revision, completada)'),
+    prioridad: Optional[str] = Query(None, description='Filtrar tareas por prioridad (baja, media, alta, urgente)'),
     db: Session = Depends(get_db)
 ):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
@@ -209,7 +216,8 @@ def tareas_del_proyecto(
     response_model=TareaResponse,
     status_code=status.HTTP_201_CREATED,
     tags=['Proyectos', 'Tareas'],
-    summary='Crear tarea en un proyecto'
+    summary='Crear tarea en un proyecto',
+    description='Crea una nueva tarea y la asocia a un proyecto existente.'
 )
 def crear_tarea_en_proyecto(
     proyecto_id: int,
