@@ -16,8 +16,15 @@ class ProyectoBase(BaseModel):
         max_length=100,
         description='Título del proyecto'
     )
-    descripcion: Optional[str] = Field(None, max_length=500)
-    fecha_limite: Optional[date] = None
+    descripcion: Optional[str] = Field(
+        None,
+        max_length=500,
+        description='Descripción detallada del propósito y alcance del proyecto'
+    )
+    fecha_limite: Optional[date] = Field(
+        None,
+        description='Fecha estimada de finalización del proyecto'
+    )
 
 
 class ProyectoCreate(ProyectoBase):
@@ -46,20 +53,26 @@ class ProyectoUpdate(BaseModel):
             }
         }
     }
-    titulo: Optional[str] = Field(None, min_length=3, max_length=100)
-    descripcion: Optional[str] = None
-    estado: Optional[str] = None
-    fecha_limite: Optional[date] = None
+    titulo: Optional[str] = Field(None, min_length=3, max_length=100, description='Nuevo título del proyecto')
+    descripcion: Optional[str] = Field(None, description='Nueva descripción del proyecto')
+    estado: Optional[str] = Field(
+        None,
+        description='Estado del proyecto: activo, pausado o completado'
+    )
+    fecha_limite: Optional[date] = Field(
+        None,
+        description='Nueva fecha límite del proyecto'
+    )
 
 
 class ProyectoResponse(ProyectoBase):
     """Schema para la respuesta con campos calculados/BD."""
 
-    id: int
-    estado: str
-    creado_en: datetime
-    propietario_id: int
-    progreso: int = 0  # calculado, no almacenado
+    id: int = Field(..., description='ID único del proyecto en la base de datos')
+    estado: str = Field(..., description='Estado actual del proyecto')
+    creado_en: datetime = Field(..., description='Fecha y hora de creación')
+    propietario_id: int = Field(..., description='ID del usuario propietario del proyecto')
+    progreso: int = Field(0, description='Porcentaje de progreso calculado basado en tareas completadas')
 
     class Config:
         from_attributes = True
@@ -76,7 +89,11 @@ class TareaBase(BaseModel):
         max_length=200,
         description='Título de la tarea'
     )
-    descripcion: Optional[str] = Field(None, max_length=500)
+    descripcion: Optional[str] = Field(
+        None,
+        max_length=500,
+        description='Detalles sobre lo que se debe realizar en esta tarea'
+    )
     prioridad: str = Field(
         'media',
         pattern='^(baja|media|alta|urgente)$',
@@ -87,12 +104,15 @@ class TareaBase(BaseModel):
         pattern='^(pendiente|en_progreso|revision|completada)$',
         description='Estado actual de la tarea'
     )
-    fecha_limite: Optional[date] = None
+    fecha_limite: Optional[date] = Field(
+        None,
+        description='Fecha límite para completar la tarea'
+    )
 
 
 class TareaCreate(TareaBase):
-    proyecto_id: int
-    asignado_id: Optional[int] = None
+    proyecto_id: int = Field(..., description='ID del proyecto al que pertenece la tarea')
+    asignado_id: Optional[int] = Field(None, description='ID del usuario asignado a la tarea')
 
     model_config = {
         "json_schema_extra": {
@@ -120,12 +140,21 @@ class TareaUpdate(BaseModel):
             }
         }
     }
-    titulo: Optional[str] = None
-    descripcion: Optional[str] = None
-    prioridad: Optional[str] = None
-    estado: Optional[str] = None
-    asignado_id: Optional[int] = None
-    fecha_limite: Optional[date] = None
+    titulo: Optional[str] = Field(None, description='Nuevo título de la tarea')
+    descripcion: Optional[str] = Field(None, description='Nueva descripción de la tarea')
+    prioridad: Optional[str] = Field(
+        None,
+        description='Nueva prioridad: baja, media, alta o urgente'
+    )
+    estado: Optional[str] = Field(
+        None,
+        description='Nuevo estado: pendiente, en_progreso, revision o completada'
+    )
+    asignado_id: Optional[int] = Field(None, description='ID del usuario al que se le asigna la tarea')
+    fecha_limite: Optional[date] = Field(
+        None,
+        description='Nueva fecha límite de la tarea'
+    )
 
 
 class TareaResponse(TareaBase):
@@ -184,10 +213,10 @@ T = TypeVar('T')
 
 
 class RespuestaPaginada(BaseModel, Generic[T]):
-    total: int
-    pagina: int
-    paginas: int
-    items: List[T]
+    total: int = Field(..., description='Total de registros encontrados')
+    pagina: int = Field(..., description='Página actual')
+    paginas: int = Field(..., description='Total de páginas disponibles')
+    items: List[T] = Field(..., description='Lista de elementos de la página actual')
 
 # ═══════════════════════════════════════════════════
 # ESTADÍSTICAS
@@ -205,3 +234,23 @@ class EstadisticasResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# api/app/schemas.py — añadir
+from pydantic import BaseModel
+
+class TokenResponse(BaseModel):
+    """Respuesta del endpoint de login."""
+    access_token: str
+    refresh_token: str
+    token_type: str = 'bearer'
+
+
+class RefreshRequest(BaseModel):
+    """Petición para renovar el access token."""
+    refresh_token: str
+
+
+class AccessTokenResponse(BaseModel):
+    """Respuesta del endpoint de refresh."""
+    access_token: str
+    token_type: str = 'bearer'
