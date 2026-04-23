@@ -1,63 +1,235 @@
-# api/app/routers/projects.py
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+# api/app/routers/projects.py — versión completa
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-
 from app.database import get_db
 from app.models import Proyecto
-from app.schemas import ProyectoResponse
-
-# Crear el router con prefijo y etiqueta para la documentación
-router = APIRouter(
-    prefix='/proyectos',
-    tags=['Proyectos'],
+from app.schemas import (
+    ProyectoCreate, ProyectoUpdate,
+    ProyectoResponse, RespuestaPaginada
 )
 
+router = APIRouter(prefix='/proyectos', tags=['Proyectos'])
 
+# ── GET /proyectos/ — Listar con filtros y paginación ────────────────
 @router.get(
     '/',
-    response_model=List[ProyectoResponse],
-    summary='Listar proyectos',
-    description='Devuelve la lista de proyectos con soporte de búsqueda y filtros.'
+    response_model=RespuestaPaginada[ProyectoResponse],
+    summary='Listar proyectos'
 )
-def listar_proyectos(
-    skip: int = Query(0, ge=0, description='Registros a omitir'),
-    limit: int = Query(20, ge=1, le=100, description='Máximo de resultados'),
-    q: Optional[str] = Query(None, description='Buscar por título'),
-    estado: Optional[str] = Query(None, description='Filtrar por estado'),
+def listar(
+    pagina: int = Query(1, ge=1),
+    tamano: int = Query(10, ge=1, le=100),
+    q: Optional[str] = Query(None, description='Buscar en título y descripción'),
+    estado: Optional[str] = Query(None, description='activo | pausado | completado'),
     db: Session = Depends(get_db)
 ):
     query = db.query(Proyecto)
 
     if q:
-        query = query.filter(Proyecto.titulo.ilike(f'%{q}%'))
+        query = query.filter(
+            Proyecto.titulo.ilike(f'%{q}%') |
+            Proyecto.descripcion.ilike(f'%{q}%')
+        )
 
     if estado:
         query = query.filter_by(estado=estado)
 
-    return query.order_by(Proyecto.creado_en.desc()) \
-        .offset(skip) \
-        .limit(limit) \
+    total = query.count()
+
+    items = query.order_by(Proyecto.creado_en.desc()) \
+        .offset((pagina - 1) * tamano) \
+        .limit(tamano) \
         .all()
 
+    return RespuestaPaginada(
+        total=total,
+        pagina=pagina,
+        paginas=(total + tamano - 1) // tamano,
+        items=items
+    )
 
+# ── GET /proyectos/{id} — Detalle ────────────────────────────────────
 @router.get(
     '/{proyecto_id}',
     response_model=ProyectoResponse,
-    summary='Obtener un proyecto',
-    description='Devuelve los datos de un proyecto por su ID.'
+    summary='Obtener un proyecto'
 )
-def obtener_proyecto(
-    proyecto_id: int,
-    db: Session = Depends(get_db)
-):
+def obtener(proyecto_id: int, db: Session = Depends(get_db)):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(
             status_code=404,
-            detail=f'Proyecto con ID {proyecto_id} no encontrado'
+            detail=f'No existe ningún proyecto con ID {proyecto_id}'
         )
 
     return proyecto
+
+# ── POST /proyectos/ — Crear ──────────────────────────────────────────
+# status_code=201 porque creamos un nuevo recurso
+@router.post(
+    '/',
+    response_model=ProyectoResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary='Crear un proyecto'
+)
+def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
+    # Verificar que no existe otro proyecto con el mismo título (opcional)
+    existente = db.query(Proyecto).filter(
+        Proyecto.titulo.ilike(datos.titulo)
+    ).first()
+
+    if existente:
+        raise HTTPException(
+            status_code=409,
+            detail='Ya existe un proyecto con ese título'
+        )
+
+    proyecto = Proyecto(
+        titulo=datos.titulo.strip(),
+        descripcion=datos.descripcion,
+        fecha_limite=datos.fecha_limite,
+        propietario_id=1  # En U08 usaremos el usuario del token JWT
+    )
+
+    db.add(proyecto)
+    db.commit()
+    db.refresh(proyecto)  # Recargar para obtener id y creado_en asignados por
+    # la BD
+
+    return proyecto
+
+# ── PUT /proyectos/{id} — Actualizar completo ─────────────────────────
+@router.put(
+    '/{proyecto_id}',
+    response_model=ProyectoResponse,
+    summary='Actualizar un proyecto completo'
+)
+def actualizar(
+    proyecto_id: int,
+    datos: ProyectoCreate,
+    db: Session = Depends(get_db)
+):
+    proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
+
+    if not proyecto:
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+
+    # PUT reemplaza todos los campos editables
+    proyecto.titulo = datos.titulo.strip()
+    proyecto.descripcion = datos.descripcion
+    proyecto.fecha_limite = datos.fecha_limite
+
+    db.commit()
+    db.refresh(proyecto)
+
+    return proyecto
+
+# ── PATCH /proyectos/{id} — Actualizar parcial ────────────────────────
+@router.patch(
+    '/{proyecto_id}',
+    response_model=ProyectoResponse,
+    summary='Actualizar campos específicos de un proyecto'
+)
+def actualizar_parcial(
+    proyecto_id: int,
+    datos: ProyectoUpdate,
+    db: Session = Depends(get_db)
+):
+    proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
+
+    if not proyecto:
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+
+    # exclude_unset=True: solo procesar los campos que el cliente envió explícitamente.
+    # Si 'descripcion' no viene en el JSON, no se modifica aunque sea None en el schema.
+    datos_a_actualizar = datos.model_dump(exclude_unset=True)
+
+    for campo, valor in datos_a_actualizar.items():
+        setattr(proyecto, campo, valor)
+
+    db.commit()
+    db.refresh(proyecto)
+
+    return proyecto
+
+# ── DELETE /proyectos/{id} — Eliminar ─────────────────────────────────
+# status_code=204: éxito sin cuerpo en la respuesta
+@router.delete(
+    '/{proyecto_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Eliminar un proyecto'
+)
+def eliminar(proyecto_id: int, db: Session = Depends(get_db)):
+    proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
+
+    if not proyecto:
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+
+    db.delete(proyecto)  # Cascade: elimina también las tareas del proyecto
+    db.commit()
+    # No devolvemos nada: 204 No Content
+
+# api/app/routers/projects.py — añadir al final
+from app.schemas import TareaResponse, TareaCreate
+from app.models import Tarea
+
+# ── GET /proyectos/{id}/tareas ────────────────────────────────────────
+@router.get(
+    '/{proyecto_id}/tareas',
+    response_model=List[TareaResponse],
+    tags=['Proyectos', 'Tareas'],  # Aparece en ambas secciones de Swagger
+    summary='Tareas de un proyecto'
+)
+def tareas_del_proyecto(
+    proyecto_id: int,
+    estado: Optional[str] = Query(None),
+    prioridad: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
+
+    if not proyecto:
+        raise HTTPException(404, 'Proyecto no encontrado')
+
+    query = db.query(Tarea).filter_by(proyecto_id=proyecto_id)
+
+    if estado:
+        query = query.filter_by(estado=estado)
+
+    if prioridad:
+        query = query.filter_by(prioridad=prioridad)
+
+    return query.order_by(Tarea.creado_en.desc()).all()
+
+# ── POST /proyectos/{id}/tareas ───────────────────────────────────────
+@router.post(
+    '/{proyecto_id}/tareas',
+    response_model=TareaResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=['Proyectos', 'Tareas'],
+    summary='Crear tarea en un proyecto'
+)
+def crear_tarea_en_proyecto(
+    proyecto_id: int,
+    datos: TareaCreate,
+    db: Session = Depends(get_db)
+):
+    proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
+
+    if not proyecto:
+        raise HTTPException(404, 'Proyecto no encontrado')
+
+    # Sobrescribir el proyecto_id del schema con el de la URL
+    # (tienen que coincidir para mantener la consistencia)
+    tarea_data = datos.model_dump()
+    tarea_data['proyecto_id'] = proyecto_id
+
+    tarea = Tarea(**tarea_data)
+
+    db.add(tarea)
+    db.commit()
+    db.refresh(tarea)
+
+    return tarea

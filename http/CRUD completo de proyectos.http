@@ -1,0 +1,54 @@
+### ================================
+### a) POST crear proyecto (201)
+### ================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto Web",
+  "descripcion": "Aplicación web de pruebas",
+  "fecha_limite": "2026-12-31"
+}
+
+### ================================
+### b) POST sin título (422)
+### ================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "descripcion": "Sin título",
+  "fecha_limite": "2026-12-31"
+}
+
+### ================================
+### c) PUT actualizar proyecto (cambia título y descripción)
+### ================================
+PUT http://127.0.0.1:8000/api/v1/proyectos/6
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto Web Actualizado",
+  "descripcion": "Descripción modificada",
+  "fecha_limite": "2026-12-31"
+}
+
+### ================================
+### d) PATCH solo estado
+### ================================
+PATCH http://127.0.0.1:8000/api/v1/proyectos/6
+Content-Type: application/json
+
+{
+  "estado": "urgente"
+}
+
+### ================================
+### e) DELETE proyecto (204)
+### ================================
+DELETE http://127.0.0.1:8000/api/v1/proyectos/6
+
+### ================================
+### f) GET proyecto eliminado (404)
+### ================================
+GET http://127.0.0.1:8000/api/v1/proyectos/6
