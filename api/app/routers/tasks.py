@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
-from app.models import Tarea, Proyecto
+from app.models import Tarea, Proyecto, Usuario
+from app.security import get_current_user
 from app.schemas import TareaCreate, TareaUpdate, TareaResponse
 
 router = APIRouter(prefix='/tareas', tags=['Tareas'])
@@ -76,14 +77,22 @@ def obtener(tarea_id: int, db: Session = Depends(get_db)):
     summary='Crear una tarea',
     description='Crea una nueva tarea. Es obligatorio proporcionar un ID de proyecto válido al que asociarla.'
 )
-def crear(datos: TareaCreate, db: Session = Depends(get_db)):
-    # Verificar que el proyecto existe
+def crear(
+    datos: TareaCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
+):
     proyecto = db.query(Proyecto).filter_by(id=datos.proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(
             404,
             f'No existe el proyecto con ID {datos.proyecto_id}'
+        )
+    if proyecto.propietario_id != usuario.id and not usuario.es_admin:
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para crear tareas en este proyecto'
         )
 
     tarea = Tarea(**datos.model_dump())
@@ -104,12 +113,23 @@ def crear(datos: TareaCreate, db: Session = Depends(get_db)):
 def actualizar(
     tarea_id: int,
     datos: TareaUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
     tarea = db.query(Tarea).filter_by(id=tarea_id).first()
 
     if not tarea:
         raise HTTPException(404, 'Tarea no encontrada')
+
+    proyecto = db.query(Proyecto).filter_by(id=tarea.proyecto_id).first()
+    if not proyecto:
+        raise HTTPException(500, 'Proyecto asociado a la tarea no encontrado')
+
+    if not (tarea.asignado_id == usuario.id or proyecto.propietario_id == usuario.id or usuario.es_admin):
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para actualizar esta tarea'
+        )
 
     for campo, valor in datos.model_dump(exclude_unset=True).items():
         setattr(tarea, campo, valor)
@@ -134,7 +154,8 @@ def cambiar_estado(
         embed=True,
         description='Nuevo estado de la tarea'
     ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
     if nuevo_estado not in ESTADOS_VALIDOS:
         raise HTTPException(
@@ -150,6 +171,16 @@ def cambiar_estado(
     if not tarea:
         raise HTTPException(404, 'Tarea no encontrada')
 
+    proyecto = db.query(Proyecto).filter_by(id=tarea.proyecto_id).first()
+    if not proyecto:
+        raise HTTPException(500, 'Proyecto asociado a la tarea no encontrado')
+
+    if not (tarea.asignado_id == usuario.id or proyecto.propietario_id == usuario.id or usuario.es_admin):
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para cambiar el estado de esta tarea'
+        )
+
     tarea.estado = nuevo_estado
 
     db.commit()
@@ -164,11 +195,25 @@ def cambiar_estado(
     summary='Eliminar una tarea',
     description='Elimina permanentemente una tarea de la base de datos. Esta operación no se puede deshacer.'
 )
-def eliminar(tarea_id: int, db: Session = Depends(get_db)):
+def eliminar(
+    tarea_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
+):
     tarea = db.query(Tarea).filter_by(id=tarea_id).first()
 
     if not tarea:
         raise HTTPException(404, 'Tarea no encontrada')
+
+    proyecto = db.query(Proyecto).filter_by(id=tarea.proyecto_id).first()
+    if not proyecto:
+        raise HTTPException(500, 'Proyecto asociado a la tarea no encontrado')
+
+    if not (proyecto.propietario_id == usuario.id or usuario.es_admin):
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para eliminar esta tarea'
+        )
 
     db.delete(tarea)
     db.commit()

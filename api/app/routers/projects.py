@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
-from app.models import Proyecto
+from app.models import Proyecto, Usuario
 from app.schemas import (
     ProyectoCreate, ProyectoUpdate,
     ProyectoResponse, RespuestaPaginada
 )
+from app.security import get_current_user, require_admin
 
 router = APIRouter(prefix='/proyectos', tags=['Proyectos'])
 
@@ -77,7 +78,11 @@ def obtener(proyecto_id: int, db: Session = Depends(get_db)):
     summary='Crear un proyecto',
     description='Crea un nuevo proyecto con el título, descripción y fecha límite proporcionados.'
 )
-def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
+def crear(
+    datos: ProyectoCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
+):
     # Verificar que no existe otro proyecto con el mismo título (opcional)
     existente = db.query(Proyecto).filter(
         Proyecto.titulo.ilike(datos.titulo)
@@ -93,7 +98,7 @@ def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
         titulo=datos.titulo.strip(),
         descripcion=datos.descripcion,
         fecha_limite=datos.fecha_limite,
-        propietario_id=1  # En U08 usaremos el usuario del token JWT
+        propietario_id=usuario.id
     )
 
     db.add(proyecto)
@@ -113,12 +118,19 @@ def crear(datos: ProyectoCreate, db: Session = Depends(get_db)):
 def actualizar(
     proyecto_id: int,
     datos: ProyectoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+
+    if proyecto.propietario_id != usuario.id and not usuario.es_admin:
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para editar este proyecto'
+        )
 
     # PUT reemplaza todos los campos editables
     proyecto.titulo = datos.titulo.strip()
@@ -140,12 +152,19 @@ def actualizar(
 def actualizar_parcial(
     proyecto_id: int,
     datos: ProyectoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+
+    if proyecto.propietario_id != usuario.id and not usuario.es_admin:
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para editar este proyecto'
+        )
 
     # exclude_unset=True: solo procesar los campos que el cliente envió explícitamente.
     # Si 'descripcion' no viene en el JSON, no se modifica aunque sea None en el schema.
@@ -167,13 +186,23 @@ def actualizar_parcial(
     summary='Eliminar un proyecto',
     description='Elimina un proyecto existente por su ID. Esto también eliminará todas las tareas asociadas al proyecto.'
 )
-def eliminar(proyecto_id: int, db: Session = Depends(get_db)):
+def eliminar(
+    proyecto_id: int,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
+):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
 
-    db.delete(proyecto)  # Cascade: elimina también las tareas del proyecto
+    if proyecto.propietario_id != usuario.id and not usuario.es_admin:
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para eliminar este proyecto'
+        )
+
+    db.delete(proyecto)
     db.commit()
     # No devolvemos nada: 204 No Content
 
@@ -222,12 +251,20 @@ def tareas_del_proyecto(
 def crear_tarea_en_proyecto(
     proyecto_id: int,
     datos: TareaCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
     proyecto = db.query(Proyecto).filter_by(id=proyecto_id).first()
 
     if not proyecto:
         raise HTTPException(404, 'Proyecto no encontrado')
+
+    if proyecto.propietario_id != usuario.id and not usuario.es_admin:
+        raise HTTPException(
+            status_code=403,
+            detail='No tienes permiso para crear tareas en este proyecto'
+        )
+
 
     # Sobrescribir el proyecto_id del schema con el de la URL
     # (tienen que coincidir para mantener la consistencia)

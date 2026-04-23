@@ -29,6 +29,16 @@ class Usuario(Base):
 
     proyectos = relationship('Proyecto', back_populates='propietario')
 
+    @property
+    def es_admin(self):
+        """Helper para verificar si el usuario tiene rol de administrador."""
+        return self.rol == 'admin'
+
+    def set_password(self, password):
+        """Hashea y asigna la contraseña al usuario."""
+        from app.security import hashear_password
+        self.password = hashear_password(password)
+
 
 class Proyecto(Base):
     __tablename__ = 'proyectos'
