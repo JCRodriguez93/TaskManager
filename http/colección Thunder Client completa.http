@@ -1,0 +1,114 @@
+@baseUrl = http://localhost:8000/api/v1
+@email = test@test.com
+@password = password123
+
+@access_token = AQUI_VA_EL_ACCESS_TOKEN_OBTENIDO_DEL_LOGIN
+@refresh_token = AQUI_VA_EL_REFRESH_TOKEN_OBTENIDO_DEL_LOGIN
+
+# =========================================================
+# CARPETA: AUTENTICACIÓN
+# =========================================================
+
+### =========================================
+### 1) REGISTRO DE USUARIO (201)
+### =========================================
+POST {{baseUrl}}/auth/registro
+Content-Type: application/json
+
+{
+  "nombre": "Test User",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+
+### =========================================
+### 2) LOGIN (200)
+### =========================================
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&username={{email}}&password={{password}}
+
+
+### =========================================
+### 3) PERFIL CON TOKEN (200)
+### =========================================
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{access_token}}
+
+
+### =========================================
+### 4) REFRESH TOKEN (200)
+### =========================================
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refresh_token}}"
+}
+
+
+# =========================================================
+# CARPETA: PROYECTOS (PROTEGIDOS)
+# =========================================================
+
+@email_ana = ana@taskmanager.com
+@password_ana = password123
+@access_token_ana = AQUI_VA_EL_ACCESS_TOKEN_DE_ANA_OBTENIDO_DEL_LOGIN
+
+### =========================================
+### 5) LOGIN DE ANA (200)
+### =========================================
+POST {{baseUrl}}/auth/token
+Content-Type: application/x-www-form-urlencoded
+grant_type=password&username={{email_ana}}&password={{password_ana}}
+
+### =========================================
+### 6) CREAR PROYECTO CON TOKEN CON ANA (201)
+### =========================================
+POST {{baseUrl}}/proyectos/
+Authorization: Bearer {{access_token_ana}}
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto de Ana",
+  "descripcion": "Descripción del proyecto de Ana",
+  "fecha_limite": "2035-12-31",
+  "estado": "pendiente",
+  "prioridad": "alta"
+}
+
+
+### =========================================
+### 7) ACTUALIZAR PROYECTO (PUT) CON TOKEN DE ANA (200)
+### =========================================
+PUT {{baseUrl}}/proyectos/6
+Authorization: Bearer {{access_token_ana}}
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto actualizado",
+  "descripcion": "Cambio completo del proyecto"
+}
+
+
+### =========================================
+### 8) ELIMINAR PROYECTO CON TOKEN DE ANA (204)
+### =========================================
+DELETE {{baseUrl}}/proyectos/6
+Authorization: Bearer {{access_token_ana}}
+
+
+### =========================================
+### 9) ELIMINAR PROYECTO SIN TOKEN DE NADIE (401)
+### =========================================
+DELETE {{baseUrl}}/proyectos/6
+
+
+### =========================================
+### 10) ELIMINAR PROYECTO CON OTRO USUARIO RANDOM (403)
+### =========================================
+@access_token_random = AQUI_VA_EL_ACCESS_TOKEN_DE_UN_USUARIO_RANDOM_OBTENIDO_DEL_LOGIN
+DELETE {{baseUrl}}/proyectos/2
+Authorization: Bearer {{access_token_random}}
