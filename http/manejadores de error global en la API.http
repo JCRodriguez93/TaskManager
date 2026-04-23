@@ -1,0 +1,39 @@
+### =========================================
+### a) ERROR 422 — tipo incorrecto
+### fecha_limite inválida ("hola")
+### =========================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto con fecha inválida",
+  "descripcion": "Esto debería fallar por fecha",
+  "fecha_limite": "hola"
+}
+
+
+### =========================================
+### b) título duplicado (201 al ser primera vez)
+### =========================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto Duplicado",
+  "descripcion": "Primera creación",
+  "fecha_limite": "2026-12-31"
+}
+
+
+### =========================================
+### b2) repetir para provocar duplicado (409)
+### =========================================
+POST http://127.0.0.1:8000/api/v1/proyectos/
+Content-Type: application/json
+
+{
+  "titulo": "Proyecto Duplicado",
+  "descripcion": "Segunda creación (debe fallar)",
+  "fecha_limite": "2026-12-31"
+}
+
