@@ -1,50 +1,40 @@
-# web/app/routes/auth.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request
-from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+# web/app/routes/auth.py — actualizar login para obtener JWT de la API
 
+from flask import Blueprint, render_template, flash, redirect, url_for, session
+from flask_login import login_user, logout_user, login_required, current_user
+from app.forms import LoginForm, RegistroForm
+from app.api_client import APIClient, APIError
+from app import db
 from app.models import Usuario
-from app.forms import RegistroForm, LoginForm
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
 
-# ── Registro ─────────────────────────────────────────────────────────
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
-    # Si ya está autenticado, redirigir al dashboard
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
 
     form = RegistroForm()
 
     if form.validate_on_submit():
-        # Verificar que el email no está ya registrado
-        if Usuario.query.filter_by(email=form.email.data.lower()).first():
-            flash(
-                'Ya existe una cuenta con ese correo electrónico. ¿Quieres iniciar sesión?',
-                'error'
-            )
-            return redirect(url_for('auth.registro'))
+        try:
+            # 1. Crear la cuenta en la API
+            APIClient.post('/auth/registro', {
+                'nombre': form.nombre.data.strip(),
+                'email': form.email.data.lower(),
+                'password': form.password.data
+            })
 
-        # Crear el usuario (sin guardar la contraseña en texto plano)
-        usuario = Usuario(
-            nombre=form.nombre.data.strip(),
-            email=form.email.data.lower().strip()
-        )
+            flash('¡Cuenta creada! Ya puedes iniciar sesión.', 'success')
+            return redirect(url_for('auth.login'))
 
-        usuario.set_password(form.password.data)  # Hashea la contraseña
-
-        db.session.add(usuario)
-        db.session.commit()
-
-        flash('¡Cuenta creada con éxito! Ya puedes iniciar sesión.', 'success')
-        return redirect(url_for('auth.login'))
+        except APIError as e:
+            flash(e.mensaje, 'error')
 
     return render_template('auth/registro.html', form=form)
 
 
-# ── Login ─────────────────────────────────────────────────────────────
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -53,40 +43,41 @@ def login():
     form = LoginForm()
 
     if form.validate_on_submit():
-        usuario = Usuario.query.filter_by(
-            email=form.email.data.lower()
-        ).first()
+        try:
+            # 1. Obtener los tokens JWT de la API (necesita form data, no JSON)
+            tokens = APIClient.post_form('/auth/token', {
+                'username': form.email.data.lower(),
+                'password': form.password.data
+            })
 
-        # Verificar usuario, contraseña Y que la cuenta esté activa
-        if (
-            usuario and
-            usuario.check_password(form.password.data) and
-            usuario.is_active
-        ):
-            # login_user() abre la sesión
-            login_user(usuario, remember=form.recordarme.data)
+            # 2. Guardar los tokens en la sesión Flask
+            session['access_token'] = tokens['access_token']
+            session['refresh_token'] = tokens['refresh_token']
 
-            # Redirección segura
-            next_page = request.args.get('next')
-            if next_page and not next_page.startswith('http'):
-                return redirect(next_page)
+            # 3. Cargar el usuario desde la BD local para Flask-Login
+            # (Flask-Login necesita un objeto Usuario de SQLAlchemy)
+            usuario = Usuario.query.filter_by(
+                email=form.email.data.lower()
+            ).first()
 
-            flash(f'¡Bienvenido de nuevo, {usuario.nombre}!', 'success')
+            if usuario:
+                login_user(usuario, remember=form.recordarme.data)
+
+            flash(f'¡Bienvenido, {tokens.get("nombre", "")}!', 'success')
             return redirect(url_for('main.index'))
 
-        # Mensaje genérico por seguridad
-        flash('Correo electrónico o contraseña incorrectos.', 'error')
+        except APIError as e:
+            flash(e.mensaje, 'error')
 
     return render_template('auth/login.html', form=form)
 
 
-# ── Logout ────────────────────────────────────────────────────────────
 @auth.route('/logout')
-@login_required  # Solo puede hacer logout quien esté autenticado
+@login_required
 def logout():
-    nombre = current_user.nombre
+    logout_user()
+    session.pop('access_token', None)  # Limpiar el JWT también
+    session.pop('refresh_token', None)
 
-    logout_user()  # Elimina la sesión del usuario
-
-    flash(f'Hasta pronto, {nombre}. Sesión cerrada correctamente.', 'info')
+    flash('Sesión cerrada correctamente.', 'info')
     return redirect(url_for('main.index'))
