@@ -1,7 +1,9 @@
-# web/app/routes/main.py
+# web/app/routes/main.py — versión híbrida (API + rutas existentes)
 
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
+from app.api_client import APIClient, APIError
+
 from app.models import Proyecto, Tarea, Usuario
 from sqlalchemy import case
 # Uso de los decoradores en las rutas:
@@ -15,64 +17,38 @@ main = Blueprint('main', __name__)
 @main.route('/')
 @login_required
 def index():
-    # Proyectos del usuario autenticado
-    mis_proyectos = (
-        Proyecto.query
-        .filter_by(propietario_id=current_user.id)
-        .order_by(Proyecto.creado_en.desc())
-        .all()
-    )
+    try:
+        # Obtener los proyectos del usuario actual
+        proyectos_resp = APIClient.get('/proyectos/', params={'tamano': 100})
+        mis_proyectos = proyectos_resp.get('items', [])
 
-    # Orden por prioridad
-    orden_prioridad = case(
-        (Tarea.prioridad == 'urgente', 0),
-        (Tarea.prioridad == 'alta', 1),
-        (Tarea.prioridad == 'media', 2),
-        else_=3
-    )
+        # Obtener las tareas urgentes asignadas al usuario
+        tareas_urgentes = APIClient.get('/tareas/', params={
+            'asignado_id': current_user.id,
+            'prioridad': 'urgente',
+            'estado': 'pendiente'
+        })
 
-    # Tareas asignadas al usuario, ordenadas por prioridad
-    mis_tareas_urgentes = (
-        Tarea.query
-        .filter_by(asignado_id=current_user.id)
-        .filter(Tarea.estado != 'completada')
-        .order_by(orden_prioridad)
-        .limit(5)
-        .all()
-    )
+        # Calcular estadísticas desde la API
+        stats = APIClient.get('/estadisticas')
 
-    # Estadísticas personalizadas
-    stats = {
-        'total_proyectos': len(mis_proyectos),
-        'proyectos_activos': sum(
-            1 for p in mis_proyectos if p.estado == 'activo'
-        ),
-        'tareas_pendientes': (
-            Tarea.query
-            .join(Proyecto)
-            .filter(Proyecto.propietario_id == current_user.id)
-            .filter(Tarea.estado != 'completada')
-            .count()
-        ),
-        'tareas_completadas': (
-            Tarea.query
-            .join(Proyecto)
-            .filter(Proyecto.propietario_id == current_user.id)
-            .filter(Tarea.estado == 'completada')
-            .count()
-        ),
-    }
-
-    return render_template(
-        'index.html',
-        mis_proyectos=mis_proyectos,
-        mis_tareas_urgentes=mis_tareas_urgentes,
-        stats=stats
-    )
+        return render_template(
+            'index.html',
+            mis_proyectos=mis_proyectos,
+            tareas_urgentes=tareas_urgentes,
+            stats=stats
+        )
+    except APIError as e:
+        flash(f'Error al cargar el dashboard: {e.mensaje}', 'error')
+        return render_template(
+            'index.html',
+            mis_proyectos=[],
+            tareas_urgentes=[],
+            stats={}
+        )
 
 
 
-# Solo admins pueden acceder al panel de administración
 @main.route('/admin')
 @login_required
 @solo_admin

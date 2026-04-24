@@ -1,10 +1,8 @@
-# web/app/routes/tasks.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
-from app import db
-from app.models import Proyecto, Tarea
-from app.forms import TareaForm
-from sqlalchemy import case
+# web/app/routes/tasks.py — versión con APIClient
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
+from app.forms import TareaForm
+from app.api_client import APIClient, APIError
 
 tasks = Blueprint('tasks', __name__)
 
@@ -12,58 +10,67 @@ tasks = Blueprint('tasks', __name__)
 @tasks.route('/proyectos/<int:pid>/tareas/nueva', methods=['GET', 'POST'])
 @login_required
 def nueva(pid):
-    proyecto = Proyecto.query.get_or_404(pid)
+    try:
+        proyecto = APIClient.get(f'/proyectos/{pid}')
+    except APIError as e:
+        flash(e.mensaje, 'error')
+        return redirect(url_for('projects.lista'))
 
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)
-        
     form = TareaForm()
 
     if form.validate_on_submit():
-        nueva_tarea = Tarea(
-            titulo=form.titulo.data,
-            descripcion=form.descripcion.data or '',
-            prioridad=form.prioridad.data,
-            estado=form.estado.data,
-            fecha_limite=form.fecha_limite.data,
-            proyecto_id=pid,
-            asignado_id=current_user.id
-        )
+        try:
+            APIClient.post(f'/proyectos/{pid}/tareas', {
+                'titulo': form.titulo.data,
+                'descripcion': form.descripcion.data or '',
+                'prioridad': form.prioridad.data,
+                'estado': form.estado.data,
+                'fecha_limite': str(form.fecha_limite.data) if form.fecha_limite.data else None,
+                'proyecto_id': pid,
+                'asignado_id': current_user.id
+            })
 
-        db.session.add(nueva_tarea)
-        db.session.commit()
+            flash('Tarea creada.', 'success')
+            return redirect(url_for('projects.detalle', pid=pid))
 
-        flash(f'Tarea "{nueva_tarea.titulo}" creada.', 'success')
-        return redirect(url_for('projects.detalle', pid=pid))
+        except APIError as e:
+            flash(e.mensaje, 'error')
 
     return render_template(
         'tasks/form.html',
         form=form,
         proyecto=proyecto,
-        titulo_pagina=f'Nueva tarea en {proyecto.titulo}'
+        titulo_pagina='Nueva tarea'
     )
 
 
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/editar', methods=['GET', 'POST'])
 @login_required
 def editar(pid, tid):
-    proyecto = Proyecto.query.get_or_404(pid)
-    tarea = Tarea.query.get_or_404(tid)
+    try:
+        proyecto = APIClient.get(f'/proyectos/{pid}')
+        tarea = APIClient.get(f'/tareas/{tid}')
+    except APIError as e:
+        flash(e.mensaje, 'error')
+        return redirect(url_for('projects.lista'))
 
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)
-
-    if tarea.proyecto_id != pid:
-        abort(404)
-
-    form = TareaForm(obj=tarea)
+    form = TareaForm(data=tarea)
 
     if form.validate_on_submit():
-        form.populate_obj(tarea)
-        db.session.commit()
+        try:
+            APIClient.patch(f'/tareas/{tid}', {
+                'titulo': form.titulo.data,
+                'descripcion': form.descripcion.data,
+                'prioridad': form.prioridad.data,
+                'estado': form.estado.data,
+                'fecha_limite': str(form.fecha_limite.data) if form.fecha_limite.data else None,
+            })
 
-        flash('Tarea actualizada.', 'success')
-        return redirect(url_for('projects.detalle', pid=pid))
+            flash('Tarea actualizada.', 'success')
+            return redirect(url_for('projects.detalle', pid=pid))
+
+        except APIError as e:
+            flash(e.mensaje, 'error')
 
     return render_template(
         'tasks/form.html',
@@ -76,41 +83,25 @@ def editar(pid, tid):
 @tasks.route('/proyectos/<int:pid>/tareas/<int:tid>/eliminar', methods=['POST'])
 @login_required
 def eliminar(pid, tid):
-    proyecto = Proyecto.query.get_or_404(pid)
-    tarea = Tarea.query.get_or_404(tid)
+    try:
+        APIClient.delete(f'/tareas/{tid}')
+        flash('Tarea eliminada.', 'success')
+    except APIError as e:
+        flash(e.mensaje, 'error')
 
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)
-
-    if tarea.proyecto_id != pid:
-        abort(404)
-
-    db.session.delete(tarea)
-    db.session.commit()
-
-    flash('Tarea eliminada.', 'success')
     return redirect(url_for('projects.detalle', pid=pid))
 
 
 @tasks.route('/mis-tareas')
 @login_required
 def mis_tareas():
-    
-    orden = case(
-        (Tarea.prioridad == 'urgente', 0),
-        (Tarea.prioridad == 'alta', 1),
-        (Tarea.prioridad == 'media', 2),
-        (Tarea.prioridad == 'baja', 3),
-        else_=3
-    )
-    if current_user.es_admin:
-        tareas = Tarea.query.order_by(orden).all()
-    else:
-        tareas = (
-            Tarea.query
-            .filter_by(asignado_id=current_user.id)
-            .order_by(orden)
-            .all()
-        )
+    try:
+        tareas = APIClient.get('/tareas/', params={
+            'asignado_id': current_user.id
+        })
 
-    return render_template('tasks/lista.html', tareas=tareas)
+        return render_template('tasks/lista.html', tareas=tareas)
+
+    except APIError as e:
+        flash(e.mensaje, 'error')
+        return redirect(url_for('main.index'))
