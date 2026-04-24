@@ -1,41 +1,34 @@
-# web/app/routes/projects.py — versión con base de datos
-from flask import Blueprint, render_template, flash, redirect, url_for, \
-    request, abort
-from app import db
-from app.models import Proyecto, Tarea
+# web/app/routes/projects.py — versión con APIClient
+from flask import Blueprint, render_template, flash, redirect, url_for, request
+from flask_login import login_required, current_user
 from app.forms import ProyectoForm, BusquedaForm
+from app.api_client import APIClient, APIError, manejar_api_error
 
 projects = Blueprint('projects', __name__, url_prefix='/proyectos')
-from flask_login import login_required, current_user
 
+# No tiene sentido que si le quito el filtro del autor o el administrador, 
+# el usuario vea proyectos de otros usuarios. 
+# Pero esto pide la tarea que se copie.
 
 @projects.route('/')
 @login_required
+@manejar_api_error('main.index')
 def lista():
     q = request.args.get('q', '').strip()
     pagina = request.args.get('pagina', 1, type=int)
 
-    # Los admins ven todos los proyectos; los usuarios normales solo los suyos
-    if current_user.es_admin:
-        query = Proyecto.query
-    else:
-        query = Proyecto.query.filter_by(propietario_id=current_user.id)
+    params = {'pagina': pagina, 'tamano': 10}
 
     if q:
-        query = query.filter(
-            db.or_(
-                Proyecto.titulo.ilike(f'%{q}%'),
-                Proyecto.descripcion.ilike(f'%{q}%')
-            )
-        )
+        params['q'] = q
 
-    paginacion = query.order_by(Proyecto.creado_en.desc()) \
-        .paginate(page=pagina, per_page=10, error_out=False)
+    # Llamada a la API — devuelve el objeto RespuestaPaginada como dict
+    respuesta = APIClient.get('/proyectos/', params=params)
 
     return render_template(
         'projects/lista.html',
-        proyectos=paginacion.items,
-        paginacion=paginacion,
+        proyectos=respuesta['items'],
+        paginacion=respuesta,
         q=q,
         form_busqueda=BusquedaForm()
     )
@@ -43,13 +36,11 @@ def lista():
 
 @projects.route('/<int:pid>')
 @login_required
+@manejar_api_error('projects.lista')
 def detalle(pid):
-    proyecto = Proyecto.query.get_or_404(pid)
-    
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)
-        
-    tareas = proyecto.tareas.order_by(Tarea.creado_en.desc()).all()
+    proyecto = APIClient.get(f'/proyectos/{pid}')
+    tareas = APIClient.get(f'/proyectos/{pid}/tareas')
+
     return render_template(
         'projects/detalle.html',
         proyecto=proyecto,
@@ -61,17 +52,21 @@ def detalle(pid):
 @login_required
 def nuevo():
     form = ProyectoForm()
+
     if form.validate_on_submit():
-        proyecto = Proyecto(
-            titulo=form.titulo.data,
-            descripcion=form.descripcion.data,
-            fecha_limite=form.fecha_limite.data,
-            propietario_id = current_user.id # ← Usar el usuario autenticado
-        )
-        db.session.add(proyecto)
-        db.session.commit()
-        flash(f'Proyecto "{proyecto.titulo}" creado.', 'success')
-        return redirect(url_for('projects.lista'))
+        try:
+            proyecto = APIClient.post('/proyectos/', {
+                'titulo': form.titulo.data,
+                'descripcion': form.descripcion.data,
+                'fecha_limite': str(form.fecha_limite.data) if form.fecha_limite.data else None
+            })
+
+            flash(f'Proyecto "{proyecto["titulo"]}" creado.', 'success')
+            return redirect(url_for('projects.lista'))
+
+        except APIError as e:
+            flash(e.mensaje, 'error')
+
     return render_template(
         'projects/form.html',
         form=form,
@@ -82,40 +77,43 @@ def nuevo():
 @projects.route('/<int:pid>/editar', methods=['GET', 'POST'])
 @login_required
 def editar(pid):
-    proyecto = Proyecto.query.get_or_404(pid)
+    try:
+        proyecto = APIClient.get(f'/proyectos/{pid}')
+    except APIError as e:
+        flash(e.mensaje, 'error')
+        return redirect(url_for('projects.lista'))
 
-    # Verificar que el usuario tiene permiso sobre este proyecto
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)  # Prohibido — devuelve la página de error 403
-
-    form = ProyectoForm(obj=proyecto)
+    # Pre-rellenar el formulario con los datos actuales del proyecto
+    form = ProyectoForm(data=proyecto)
 
     if form.validate_on_submit():
-        form.populate_obj(proyecto)
-        db.session.commit()
+        try:
+            APIClient.patch(f'/proyectos/{pid}', {
+                'titulo': form.titulo.data,
+                'descripcion': form.descripcion.data,
+                'fecha_limite': str(form.fecha_limite.data) if form.fecha_limite.data else None
+            })
 
-        flash('Proyecto actualizado.', 'success')
-        return redirect(url_for('projects.detalle', pid=pid))
+            flash('Proyecto actualizado.', 'success')
+            return redirect(url_for('projects.detalle', pid=pid))
+
+        except APIError as e:
+            flash(e.mensaje, 'error')
 
     return render_template(
         'projects/form.html',
         form=form,
-        titulo_pagina=f'Editar: {proyecto.titulo}'
+        titulo_pagina=f'Editar: {proyecto["titulo"]}'
     )
 
 
-# Solo el propietario o un admin puede eliminar su proyecto
 @projects.route('/<int:pid>/eliminar', methods=['POST'])
 @login_required
 def eliminar(pid):
-    proyecto = Proyecto.query.get_or_404(pid)
+    try:
+        APIClient.delete(f'/proyectos/{pid}')
+        flash('Proyecto eliminado.', 'success')
+    except APIError as e:
+        flash(e.mensaje, 'error')
 
-    # Verificar propiedad manualmente (más claro que un decorador genérico)
-    if proyecto.propietario_id != current_user.id and not current_user.es_admin:
-        abort(403)
-
-    db.session.delete(proyecto)
-    db.session.commit()
-
-    flash('Proyecto eliminado.', 'success')
     return redirect(url_for('projects.lista'))
