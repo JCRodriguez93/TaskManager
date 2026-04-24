@@ -18,13 +18,13 @@
     </div>
 
     <div class="stat">
-      <span class="numero">{{ mis_tareas_urgentes | length }}</span>
+      <span class="numero">{{ tareas_urgentes | length }}</span>
       <span class="etiqueta">Urgentes</span>
     </div>
   </div>
   
   <h2>Tareas que requieren atención</h2>
-  {% for tarea in mis_tareas_urgentes %}
+  {% for tarea in tareas_urgentes %}
   <div class="tarea-urgente">
     <strong>{{ tarea.titulo }}</strong>
     <span class="proyecto">{{ tarea.proyecto }}</span>

@@ -24,9 +24,18 @@ def listar(
     tamano: int = Query(10, ge=1, le=100, description='Cantidad de proyectos por página (máximo 100)'),
     q: Optional[str] = Query(None, description='Buscar en título y descripción'),
     estado: Optional[str] = Query(None, description='activo | pausado | completado'),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user)
 ):
+    """
+    Listar proyectos. Si el usuario no es admin, solo devuelve sus proyectos.
+    El cliente debe enviar el JWT en Authorization; get_current_user lo valida.
+    """
     query = db.query(Proyecto)
+
+    # Si el usuario no es admin, limitar a sus proyectos
+    if not usuario.es_admin:
+        query = query.filter_by(propietario_id=usuario.id)
 
     if q:
         query = query.filter(
@@ -103,8 +112,7 @@ def crear(
 
     db.add(proyecto)
     db.commit()
-    db.refresh(proyecto)  # Recargar para obtener id y creado_en asignados por
-    # la BD
+    db.refresh(proyecto)  # Recargar para obtener id y creado_en asignados por la BD
 
     return proyecto
 
@@ -167,7 +175,6 @@ def actualizar_parcial(
         )
 
     # exclude_unset=True: solo procesar los campos que el cliente envió explícitamente.
-    # Si 'descripcion' no viene en el JSON, no se modifica aunque sea None en el schema.
     datos_a_actualizar = datos.model_dump(exclude_unset=True)
 
     for campo, valor in datos_a_actualizar.items():
@@ -206,7 +213,7 @@ def eliminar(
     db.commit()
     # No devolvemos nada: 204 No Content
 
-# api/app/routers/projects.py — añadir al final
+# ── GET /proyectos/{id}/tareas ────────────────────────────────────────
 from app.schemas import TareaResponse, TareaCreate
 from app.models import Tarea
 

@@ -1,5 +1,6 @@
 # web/app/__init__.py
 from flask import Flask, render_template
+import requests
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -8,6 +9,13 @@ from config import Config
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+
+from app.models import Usuario
+
+
+@login_manager.user_loader
+def cargar_usuario(user_id):
+    return Usuario.query.get(int(user_id))
 
 
 def create_app(config_class=Config):
@@ -45,5 +53,13 @@ def create_app(config_class=Config):
     @app.errorhandler(403)
     def prohibido(e):
         return render_template('errores/403.html'), 403
+
+    @app.context_processor
+    def inject_api_status():
+        try:
+            requests.get('http://127.0.0.1:8000/health', timeout=1)
+            return {'api_disponible': True}
+        except:
+            return {'api_disponible': False}
 
     return app

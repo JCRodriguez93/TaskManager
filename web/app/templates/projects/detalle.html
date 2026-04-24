@@ -7,10 +7,10 @@ endblock %} {% block content %}
   </div>
 </div>
 <p class="descripcion-proyecto">{{ proyecto.descripcion }}</p>
-{# Calcular el progreso del proyecto #} {% set completadas = proyecto.tareas |
-selectattr('estado', 'equalto', 'completada') | list %} {% set total =
-proyecto.tareas.count() %} {% if total > 0 %} {% set progreso = (completadas |
-length / total * 100) | round | int %}
+{# Calcular el progreso del proyecto usando la variable tareas #} {% set
+completadas = tareas | selectattr('estado', 'equalto', 'completada') | list %}
+{% set total = tareas | length %} {% if total > 0 %} {% set progreso =
+(completadas | length / total * 100) | round | int %}
 <div class="progreso-container">
   <div class="progreso-label">Progreso: {{ progreso }}%</div>
   <div class="progreso-barra">
@@ -20,9 +20,10 @@ length / total * 100) | round | int %}
 {% endif %}
 <div class="tareas-header">
   <h2>Tareas ({{ total }})</h2>
-  <a href="{{ url_for('tasks.nueva', pid=proyecto.id) }}" class="btn">+ Nueva tarea</a>
+  <a href="{{ url_for('tasks.nueva', pid=proyecto.id) }}" class="btn">+ Nueva tarea</a
+  >
 </div>
- {% for tarea in proyecto.tareas %}
+{% for tarea in tareas %}
 <div class="tarea prioridad-{{ tarea.prioridad }}">
   <div class="tarea-info">
     <span class="badge badge-{{ tarea.prioridad }}">
@@ -33,7 +34,7 @@ length / total * 100) | round | int %}
   <span class="badge badge-{{ tarea.estado }}">
     {{ tarea.estado | replace('_', ' ') | capitalize }}
   </span>
-<div class="acciones-tarea">
+  <div class="acciones-tarea">
     <a
       href="{{ url_for('tasks.editar', pid=proyecto.id, tid=tarea.id) }}"
       class="btn btn-sm btn-sec"
@@ -41,11 +42,19 @@ length / total * 100) | round | int %}
       ✏️ Editar
     </a>
 
-    <form action="{{ url_for('tasks.eliminar', pid=proyecto.id, tid=tarea.id) }}" method="POST" style="display: inline">
-      <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?');">
+    <form
+      action="{{ url_for('tasks.eliminar', pid=proyecto.id, tid=tarea.id) }}"
+      method="POST"
+      style="display: inline"
+    >
+      <button
+        type="submit"
+        class="btn btn-sm btn-danger"
+        onclick="return confirm('¿Eliminar?');"
+      >
         🗑️ Borrar
       </button>
-
+      
     </form>
 
   </div>

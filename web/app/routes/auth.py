@@ -63,7 +63,7 @@ def login():
             if usuario:
                 login_user(usuario, remember=form.recordarme.data)
 
-            flash(f'¡Bienvenido, {tokens.get("nombre", "")}!', 'success')
+            flash(f'¡Bienvenido, {current_user.nombre}!', 'success') # Modificado para que salga el nombre
             return redirect(url_for('main.index'))
 
         except APIError as e:

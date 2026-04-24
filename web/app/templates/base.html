@@ -35,6 +35,11 @@
         {% endif %}
       </div>
     </nav>
+    {% if not api_disponible %}
+    <div class="alerta alerta-warning" style="text-align: center; border-radius: 0;">
+      ⚠ El servicio API no está disponible. Algunas funciones pueden no funcionar.
+    </div>
+    {% endif %}
     <div class="mensajes">
       {% with messages = get_flashed_messages(with_categories=true) %} {% for
       categoria, mensaje in messages %}
